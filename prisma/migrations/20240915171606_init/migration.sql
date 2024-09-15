@@ -35,6 +35,7 @@ CREATE TABLE "Petsitter" (
 CREATE TABLE "Customer" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "account_status" TEXT NOT NULL,
 
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
@@ -90,6 +91,7 @@ CREATE TABLE "Activity_Payment" (
 CREATE TABLE "Activity_Checkbox" (
     "id" TEXT NOT NULL,
     "checked" BOOLEAN NOT NULL,
+    "activity_id" TEXT NOT NULL,
     "pet_service_id" TEXT NOT NULL,
 
     CONSTRAINT "Activity_Checkbox_pkey" PRIMARY KEY ("id")
@@ -167,6 +169,8 @@ CREATE TABLE "Petsitter_Request" (
 CREATE TABLE "Pet_Service" (
     "id" TEXT NOT NULL,
     "pet_id" TEXT NOT NULL,
+    "service_type_id" TEXT NOT NULL,
+    "activity_id" TEXT NOT NULL,
 
     CONSTRAINT "Pet_Service_pkey" PRIMARY KEY ("id")
 );
@@ -223,6 +227,9 @@ ALTER TABLE "Activity_Payment" ADD CONSTRAINT "Activity_Payment_activity_id_fkey
 ALTER TABLE "Activity_Payment" ADD CONSTRAINT "Activity_Payment_petsitter_id_fkey" FOREIGN KEY ("petsitter_id") REFERENCES "Petsitter"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Activity_Checkbox" ADD CONSTRAINT "Activity_Checkbox_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "Activity"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Activity_Checkbox" ADD CONSTRAINT "Activity_Checkbox_pet_service_id_fkey" FOREIGN KEY ("pet_service_id") REFERENCES "Pet_Service"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -239,3 +246,9 @@ ALTER TABLE "Petsitter_Request" ADD CONSTRAINT "Petsitter_Request_petsitter_id_f
 
 -- AddForeignKey
 ALTER TABLE "Pet_Service" ADD CONSTRAINT "Pet_Service_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "Pet"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Pet_Service" ADD CONSTRAINT "Pet_Service_service_type_id_fkey" FOREIGN KEY ("service_type_id") REFERENCES "Service_Type"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Pet_Service" ADD CONSTRAINT "Pet_Service_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "Activity"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
