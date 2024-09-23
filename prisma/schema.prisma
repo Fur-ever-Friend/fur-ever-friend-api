@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,218 +8,321 @@ datasource db {
 }
 
 model User {
-  id        String @id @default(uuid())
-  email     String @unique
+  id        String  @id @default(uuid())
+  email     String  @unique
   password  String
-  firstname String
-  lastname  String
-  phone     String
+  firstname String  @db.VarChar(30)
+  lastname  String  @db.VarChar(30)
+  phone     String? @db.VarChar(20)
+  role      Role
 
-  Petsitter Petsitter[]
+  customer     Customer?
+  petsitter    Petsitter?
+  admin        Admin?
+  reporterList Report[]   @relation("reporter")
+  reportedList Report[]   @relation("reported")
 
-  Customer Customer[]
-
-  Admin Admin[]
+  @@map("users")
 }
 
 model Petsitter {
-  id             String @id @default(uuid())
-  user           User   @relation(fields: [userId], references: [id])
-  userId         String @unique
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String       @unique @map("user_id")
   information    String
-  rating         String
-  account_status String
-  certificate    String
+  rating         Float        @default(4.0)
+  accountStatus  AccountState @default(ACTIVE) @map("account_status")
+  certificateUrl String       @map("certificate_url")
 
-  Activity Activity[]
+  activities Activity[]
 
-  Petsitter_Request Petsitter_Request[]
+  requests PetsitterRequest[]
 
-  Activity_Progress Activity_Progress[]
-
-  Activity_Payment Activity_Payment[]
+  @@map("petsitters")
 }
 
 model Customer {
-  id     String @id @default(uuid())
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique
-  account_status String
+  id            String       @id @default(uuid())
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String       @unique @map("user_id")
+  accountStatus AccountState @default(ACTIVE) @map("account_status")
 
-  Activity Activity[]
+  activities Activity[]
+
+  @@map("customers")
 }
 
 model Admin {
   id     String @id @default(uuid())
   user   User   @relation(fields: [userId], references: [id])
-  userId String @unique
+  userId String @unique @map("user_id")
+
+  @@map("admins")
 }
 
 model Activity {
-  id             String   @id @default(uuid())
-  title          String
-  description    String
-  created_at     DateTime
-  updated_at     DateTime
-  start_datetime DateTime
-  end_datetime   DateTime
-  pick_up_point  String
-  state          String
-  price          Float
+  id            String        @id @default(uuid())
+  title         String
+  description   String
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  startDateTime DateTime
+  endDateTime   DateTime
+  pickupPoint   String
+  state         ActivityState @default(PENDING)
+  price         Float
 
-  customer    Customer @relation(fields: [customer_id], references: [id])
-  customer_id String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String   @map("customer_id")
 
-  petsitter    Petsitter @relation(fields: [petsitter_id], references: [id])
-  petsitter_id String
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitterId String    @map("petsitter_id")
 
-  Petsitter_Request Petsitter_Request[]
+  requests PetsitterRequest[]
 
-  Activity_Progress Activity_Progress[]
+  progresses ActivityProgress[]
 
-  Activity_Payment Activity_Payment[]
+  payments ActivityPayment[]
 
-  Pet_Service      Pet_Service[]
+  services ActivityService[]
 
-  Activity_Checkbox Activity_Checkbox[]
+  review Review?
+
+  @@map("activities")
 }
 
-model Activity_Progress {
-  id         String   @id @default(uuid())
-  created_at DateTime
-  content    String
+model ActivityProgress {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  content   String
 
-  activity    Activity @relation(fields: [activity_id], references: [id])
-  activity_id String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @map("activity_id")
 
-  petsitter    Petsitter @relation(fields: [petsitter_id], references: [id])
-  petsitter_id String
+  images ProgressImage[]
+
+  @@map("activity_progresses")
 }
 
-model Activity_Payment {
-  id     String @id @default(uuid())
-  status String
+model ProgressImage {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
 
-  activity    Activity @relation(fields: [activity_id], references: [id])
-  activity_id String
+  imageUrl           String           @map("image_url")
+  activityProgress   ActivityProgress @relation(fields: [activityProgressId], references: [id])
+  activityProgressId String           @map("activity_progress_id")
 
-  petsitter    Petsitter @relation(fields: [petsitter_id], references: [id])
-  petsitter_id String
+  @@map("progress_images")
 }
 
-model Activity_Checkbox {
-  id      String  @id @default(uuid())
-  checked Boolean
+model ActivityPayment {
+  id    String @id @default(uuid())
+  state State  @default(PENDING)
 
-  activity    Activity @relation(fields: [activity_id], references: [id])
-  activity_id String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @map("activity_id")
 
-  pet_service    Pet_Service @relation(fields: [pet_service_id], references: [id])
-  pet_service_id String
+  @@map("activity_payments")
 }
 
 model Payment {
-  id             String   @id @default(uuid())
-  timestamp      DateTime
-  amount         Float
-  state          State
-  transaction_id String
-  payment_mothod String
+  id            String        @id @default(uuid())
+  timestamp     DateTime      @default(now())
+  amount        Float
+  state         State         @default(PENDING)
+  transactionId String        @unique @map("transaction_id")
+  paymentMethod PaymentMethod @default(CREDIT_CARD)
+
+  @@map("payments")
 }
 
 model Qualification {
-  id            String @id @default(uuid())
-  email         String @unique
-  password      String
-  firstname     String
-  lastname      String
-  phone         String
-  certification String
-  State         State
+  id             String @id @default(uuid())
+  email          String @unique @db.VarChar(50)
+  password       String
+  firstname      String @db.VarChar(30)
+  lastname       String @db.VarChar(30)
+  phone          String @db.VarChar(20)
+  state          State  @default(PENDING)
+  certificateUrl String @map("certificate_url")
+
+  @@map("qualifications")
 }
 
 model Pet {
-  id        String @id @default(uuid())
-  name      String
-  age       Int
-  size      Size
-  image_url String
-  gender    String
+  id       String @id @default(uuid())
+  name     String @db.VarChar(20)
+  age      Int
+  weight   Float
+  imageUrl String @map("image_url")
+  gender   Gender
 
-  animal_type    Animal_Type @relation(fields: [animal_type_id], references: [id])
-  animal_type_id String
+  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
+  animalTypeId String     @map("animal_type_id")
 
-  breed    Breed  @relation(fields: [breed_id], references: [id])
-  breed_id String
+  breed   Breed  @relation(fields: [breedId], references: [id])
+  breedId String @map("breed_id")
 
-  Pet_Service Pet_Service[]
+  services ActivityService[]
+
+  @@map("pets")
 }
 
-model Animal_Type {
+model AnimalType {
   id   String @id @default(uuid())
-  name String
+  name String @db.VarChar(30)
 
-  Pet Pet[]
+  pets   Pet[]
+  breeds Breed[]
+
+  @@map("animal_types")
 }
 
 model Breed {
   id   String @id @default(uuid())
-  name String
+  name String @db.VarChar(30)
 
-  Pet Pet[]
+  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
+  animalTypeId String     @map("animal_type_id")
+
+  pets Pet[]
+
+  @@map("breeds")
 }
 
-model Petsitter_Request {
-  id         String   @id @default(uuid())
-  created_at DateTime
-  state      State
-  price      Float
+model PetsitterRequest {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  state     State    @default(PENDING)
+  price     Float
+  message   String?
 
-  activity    Activity @relation(fields: [activity_id], references: [id])
-  activity_id String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @map("activity_id")
 
-  petsitter    Petsitter @relation(fields: [petsitter_id], references: [id])
-  petsitter_id String
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitterId String    @map("petsitter_id")
+
+  @@map("petsitter_requests")
 }
 
-model Pet_Service {
+model ActivityService {
   id String @id @default(uuid())
 
-  pet    Pet    @relation(fields: [pet_id], references: [id])
-  pet_id String
+  pet   Pet    @relation(fields: [petId], references: [id])
+  petId String @map("pet_id")
 
-  service_type    Service_Type @relation(fields: [service_type_id], references: [id])
-  service_type_id String
+  service   Service @relation(fields: [serviceId], references: [id])
+  serviceId String  @map("service_id")
 
-  activity    Activity @relation(fields: [activity_id], references: [id])
-  activity_id String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @map("activity_id")
 
-  Activity_Checkbox Activity_Checkbox[]
+  status Boolean @default(false)
+
+  @@map("pet_services")
 }
 
-model Service_Type {
-  id          String @id @default(uuid())
-  name        String
+model Service {
+  id          String      @id @default(uuid())
+  serviceType ServiceType @unique @map("service_type")
   description String
 
-  Pet_Service Pet_Service[]
+  services ActivityService[]
+
+  @@map("service_types")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  content   String
+  rating    Float
+
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @unique @map("activity_id")
+
+  @@map("reviews")
+}
+
+model Report {
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now()) @map("created_at")
+  content     String
+  reportImage ReportImage[]
+
+  reporter   User   @relation("reporter", fields: [reporterId], references: [id])
+  reporterId String @map("reporter_id")
+
+  reported   User   @relation("reported", fields: [reportedId], references: [id])
+  reportedId String @map("reported_id")
+
+  @@map("reports")
+}
+
+model ReportImage {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  imageUrl String @map("image_url")
+  report   Report @relation(fields: [reportId], references: [id])
+  reportId String @map("report_id")
+
+  @@map("report_images")
 }
 
 enum Role {
-  UNREGISTER
   CUSTOMER
   PETSITTER
   ADMIN
+
+  @@map("roles")
 }
 
 enum State {
   PENDING
   ACCEPTED
   REJECTED
+
+  @@map("states")
 }
 
-enum Size {
-  SMALL
-  MEDIUM
-  LARGE
+enum AccountState {
+  ACTIVE
+  INACTIVE
+
+  @@map("account_states")
+}
+
+enum ActivityState {
+  PENDING
+  CANCELLED
+  FAILED
+  COMPLETED
+
+  @@map("activity_states")
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PAYPAL
+  PROMPTPAY
+  CASH
+
+  @@map("payment_methods")
+}
+
+enum Gender {
+  MALE
+  FEMAIL
+
+  @@map("genders")
+}
+
+enum ServiceType {
+  PET_SITTING
+  PET_WALKING
+  PET_FEEDING
+
+  @@map("service_types")
 }
