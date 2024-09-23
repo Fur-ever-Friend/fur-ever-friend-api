@@ -11,9 +11,9 @@ model User {
   id        String  @id @default(uuid())
   email     String  @unique
   password  String
-  firstname String
-  lastname  String
-  phone     String?
+  firstname String  @db.VarChar(30)
+  lastname  String  @db.VarChar(30)
+  phone     String? @db.VarChar(20)
   role      Role
 
   customer     Customer?
@@ -64,13 +64,13 @@ model Activity {
   id            String        @id @default(uuid())
   title         String
   description   String
-  createdAt     DateTime
-  updatedAt     DateTime
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
   startDateTime DateTime
   endDateTime   DateTime
   pickupPoint   String
   state         ActivityState @default(PENDING)
-  price         Float         @default(0)
+  price         Float
 
   customer   Customer @relation(fields: [customerId], references: [id])
   customerId String   @map("customer_id")
@@ -108,7 +108,7 @@ model ProgressImage {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
 
-  url                String
+  imageUrl           String           @map("image_url")
   activityProgress   ActivityProgress @relation(fields: [activityProgressId], references: [id])
   activityProgressId String           @map("activity_progress_id")
 
@@ -127,7 +127,7 @@ model ActivityPayment {
 
 model Payment {
   id            String        @id @default(uuid())
-  timestamp     DateTime
+  timestamp     DateTime      @default(now())
   amount        Float
   state         State         @default(PENDING)
   transactionId String        @unique @map("transaction_id")
@@ -138,12 +138,12 @@ model Payment {
 
 model Qualification {
   id             String @id @default(uuid())
-  email          String @unique
+  email          String @unique @db.VarChar(50)
   password       String
-  firstname      String
-  lastname       String
-  phone          String
-  state          State
+  firstname      String @db.VarChar(30)
+  lastname       String @db.VarChar(30)
+  phone          String @db.VarChar(20)
+  state          State  @default(PENDING)
   certificateUrl String @map("certificate_url")
 
   @@map("qualifications")
@@ -151,10 +151,10 @@ model Qualification {
 
 model Pet {
   id       String @id @default(uuid())
-  name     String
+  name     String @db.VarChar(20)
   age      Int
   weight   Float
-  imageUrl String
+  imageUrl String @map("image_url")
   gender   Gender
 
   animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
@@ -170,7 +170,7 @@ model Pet {
 
 model AnimalType {
   id   String @id @default(uuid())
-  name String
+  name String @db.VarChar(30)
 
   pets   Pet[]
   breeds Breed[]
@@ -180,7 +180,7 @@ model AnimalType {
 
 model Breed {
   id   String @id @default(uuid())
-  name String
+  name String @db.VarChar(30)
 
   animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
   animalTypeId String     @map("animal_type_id")
@@ -192,8 +192,8 @@ model Breed {
 
 model PetsitterRequest {
   id        String   @id @default(uuid())
-  createdAt DateTime
-  state     State
+  createdAt DateTime @default(now()) @map("created_at")
+  state     State    @default(PENDING)
   price     Float
   message   String?
 
@@ -213,19 +213,19 @@ model ActivityService {
   petId String @map("pet_id")
 
   service   Service @relation(fields: [serviceId], references: [id])
-  serviceId String  @map("service_type_id")
+  serviceId String  @map("service_id")
 
   activity   Activity @relation(fields: [activityId], references: [id])
   activityId String   @map("activity_id")
 
-  status Boolean
+  status Boolean @default(false)
 
   @@map("pet_services")
 }
 
 model Service {
-  id          String @id @default(uuid())
-  serviceType String @unique @map("service_type")
+  id          String      @id @default(uuid())
+  serviceType ServiceType @unique @map("service_type")
   description String
 
   services ActivityService[]
@@ -235,99 +235,94 @@ model Service {
 
 model Review {
   id        String   @id @default(uuid())
-  createdAt DateTime
+  createdAt DateTime @default(now()) @map("created_at")
   content   String
   rating    Float
 
   activity   Activity @relation(fields: [activityId], references: [id])
-  activityId String   @unique
+  activityId String   @unique @map("activity_id")
 
   @@map("reviews")
 }
 
 model Report {
   id          String        @id @default(uuid())
-  createdAt   DateTime
+  createdAt   DateTime      @default(now()) @map("created_at")
   content     String
   reportImage ReportImage[]
 
   reporter   User   @relation("reporter", fields: [reporterId], references: [id])
-  reporterId String
+  reporterId String @map("reporter_id")
 
   reported   User   @relation("reported", fields: [reportedId], references: [id])
-  reportedId String
+  reportedId String @map("reported_id")
 
   @@map("reports")
 }
 
 model ReportImage {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
-  url      String
+  imageUrl String @map("image_url")
   report   Report @relation(fields: [reportId], references: [id])
-  reportId String
+  reportId String @map("report_id")
 
   @@map("report_images")
 }
 
 enum Role {
-  UNREGISTER @map("UNREGISTER")
-  CUSTOMER   @map("CUSTOMER")
-  PETSITTER  @map("PETSITTER")
-  ADMIN      @map("ADMIN")
+  CUSTOMER
+  PETSITTER
+  ADMIN
 
   @@map("roles")
 }
 
 enum State {
-  PENDING  @map("PENDING")
-  ACCEPTED @map("ACCEPTED")
-  REJECTED @map("REJECTED")
+  PENDING
+  ACCEPTED
+  REJECTED
 
   @@map("states")
 }
 
 enum AccountState {
-  ACTIVE   @map("ACTIVE")
-  INACTIVE @map("INACTIVE")
+  ACTIVE
+  INACTIVE
 
   @@map("account_states")
 }
 
 enum ActivityState {
-  PENDING   @map("PENDING")
-  ACCEPTED  @map("ACCEPTED")
-  REJECTED  @map("REJECTED")
-  CANCELLED @map("CANCELLED")
-  COMPLETED @map("COMPLETED")
+  PENDING
+  CANCELLED
+  FAILED
+  COMPLETED
 
   @@map("activity_states")
 }
 
 enum PaymentMethod {
-  CREDIT_CARD @map("CREDIT_CARD")
-  PAYPAL      @map("PAYPAL")
-  CASH        @map("CASH")
+  CREDIT_CARD
+  PAYPAL
+  PROMPTPAY
+  CASH
 
   @@map("payment_methods")
 }
 
 enum Gender {
-  MALE    @map("MALE")
-  FEMAIL  @map("FEMAIL")
-  UNKNOWN @map("UNKNOWN")
+  MALE
+  FEMAIL
 
   @@map("genders")
 }
 
 enum ServiceType {
-  PET_SITTING    @map("PET_SITTING")
-  PET_WALKING    @map("PET_WALKING")
-  PET_GROOMING   @map("PET_GROOMING")
-  PET_TRAINING   @map("PET_TRAINING")
-  PET_FEEDING    @map("PET_FEEDING")
-  PET_MEDICATION @map("PET_MEDICATION")
+  PET_SITTING
+  PET_WALKING
+  PET_FEEDING
 
   @@map("service_types")
 }
