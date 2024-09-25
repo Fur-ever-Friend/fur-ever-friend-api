@@ -1,9 +1,11 @@
 import { BadRequestException, Body, Controller, Get, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { QualificationService } from './qualification.service';
-import { QualificationDto } from './dto/qualification.dto';
+import { QualificationDto, QualificationSchema } from './dto/qualification.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from "uuid";
+import { checkFileNameEncoding, generateRandomFileName } from 'src/utils/checkFilenameEncoding';
+
 @Controller('qualifications')
 export class QualificationController {
   constructor(private readonly qualificationService: QualificationService) { }
@@ -15,9 +17,12 @@ export class QualificationController {
         destination: './uploads',
         filename: (_, file, callback) => {
           const [originalFilename, fileExt] = file.originalname.split('.');
+          const extension = file.mimetype.split("/")[1];
           const id = uuidV4();
-          const fileName = `${id}-${originalFilename}.${fileExt}`;
-          callback(null, fileName);
+          let filename: string;
+          if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+          else filename = `${id}-${originalFilename}.${fileExt}`;
+          callback(null, filename);
         },
       }),
       limits: { fileSize: 5 * 1024 * 1024 },
@@ -30,9 +35,20 @@ export class QualificationController {
       },
     }
     ))
-  create(@Body() qualificationDto: QualificationDto, @UploadedFile() file: Express.Multer.File) {
+  create(@Body("json") json: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file attached")
-    return this.qualificationService.save(qualificationDto, file);
+    try {
+      const jsonParse = JSON.parse(json);
+      const validateData = QualificationSchema.safeParse(jsonParse);
+      if (!validateData.success) {
+        throw new BadRequestException("Invalid Field");
+      }
+      const data = validateData.data as QualificationDto;
+      return this.qualificationService.save(data, file);
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException("Invalid JSON");
+    }
   }
 
   @Get()

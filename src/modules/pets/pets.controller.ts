@@ -1,35 +1,33 @@
-import { Body, Controller, Get, Param, Post, RawBody, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { PetService } from './pets.service';
-import { CreatePetDto, TestWrapper } from './dto/create-pet.dto';
 import { v4 as uuidV4 } from "uuid";
-import { AnyFilesInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { CreatePetDto, CreatePetSchema } from './dto/create-pet.dto';
+import { UpdatePetDto, UpdatePetSchema } from './dto/update-pet.dto';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/utils/checkFilenameEncoding';
 @Controller('pets')
 export class PetController {
     constructor(private readonly petService: PetService) { }
 
-    // @Post()
-    // create(@Body() createPetsDto: CreatePetDto) {
-    //     return this.petService.createPets(createPetsDto);
-    // }
-
     @Post()
     @UseInterceptors(
-        FilesInterceptor('pets[*].imageUrl', 10, {
+        FileInterceptor('file', {
             storage: diskStorage({
                 destination: './uploads',
                 filename: (_, file, callback) => {
-                    console.log("test file pipe", file.filename);
                     const [originalFilename, fileExt] = file.originalname.split('.');
+                    const extension = file.mimetype.split("/")[1];
                     const id = uuidV4();
-                    const fileName = `${id}-${originalFilename}.${fileExt}`;
-                    callback(null, fileName);
+                    let filename: string;
+                    if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+                    else filename = `${id}-${originalFilename}.${fileExt}`;
+                    callback(null, filename);
                 },
             }),
             limits: { fileSize: 5 * 1024 * 1024 },
             fileFilter(_, file, callback) {
                 const validExtensions = /\.(jpg|jpeg|png|gif)$/;
-                console.log("file", file.originalname);
                 if (!file.originalname.match(validExtensions)) {
                     return callback(null, false);
                 }
@@ -37,18 +35,20 @@ export class PetController {
             },
         }),
     )
-    async create(@Body() createPetsDto: any, @UploadedFiles() files: Express.Multer.File[]) {
-        console.log("files", files);
-
-        // createPetsDto.pets.forEach((pet, index) => {
-        //     if (files[index]) {
-        //         pet.imageUrl = files[index].filename;
-        //     }
-        // });
-
-        // return this.petService.createPets(createPetsDto);
-        console.log("owner id", createPetsDto.ownerId);
-        return {}
+    async create(
+        @Body("json") json: string,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        try {
+            const jsonParse = JSON.parse(json);
+            const validateData = CreatePetSchema.safeParse(jsonParse);
+            if (!validateData.success) throw new BadRequestException("Invalid Field");
+            const data = validateData.data satisfies CreatePetDto;
+            data.imageUrl = file.filename;
+            return this.petService.createPet(data);
+        } catch (error) {
+            throw new BadRequestException("Invalid JSON");
+        }
     }
 
     @Get()
@@ -63,36 +63,77 @@ export class PetController {
 
     @Get("owner/:ownerId")
     getPetsByOwner(@Param("ownerId") ownerId: string) {
-        return this.petService.getPetsByOwner(ownerId);
+        return this.petService.getPetsByOwnerId(ownerId);
     }
 
-    @Post('test')
-    @UseInterceptors(AnyFilesInterceptor({
-        storage: diskStorage({
-            destination: './uploads',
-            filename: (req, file, callback) => {
-                console.log('file:', file);
-                const fileExt = file.originalname.split('.').pop();
-                const originalFilename = file.originalname.substring(0, file.originalname.lastIndexOf('.'));
-                const id = uuidV4();
-                const fileName = `${id}-${originalFilename}.${fileExt}`;
-                callback(null, fileName);
+    @Patch(":petId")
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: './uploads',
+                filename: (_, file, callback) => {
+                    const [originalFilename, fileExt] = file.originalname.split('.');
+                    const extension = file.mimetype.split("/")[1];
+                    const id = uuidV4();
+                    let filename: string;
+                    if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+                    else filename = `${id}-${originalFilename}.${fileExt}`;
+                    callback(null, filename);
+                },
+            }),
+            limits: { fileSize: 5 * 1024 * 1024 },
+            fileFilter(_, file, callback) {
+                const validExtensions = /\.(jpg|jpeg|png|gif)$/;
+                if (!file.originalname.match(validExtensions)) {
+                    return callback(null, false);
+                }
+                callback(null, true);
             },
         }),
-        limits: { fileSize: 5 * 1024 * 1024 },
-        fileFilter: (req, file, callback) => {
-            console.log('file:', file);
-            const validExtensions = /\.(jpg|jpeg|png|gif)$/;
-            if (!file.originalname.match(validExtensions)) {
-                return callback(null, false); // Reject file
-            }
-            callback(null, true); // Accept file
-        },
-    }))
-    async test(@UploadedFiles() files: Array<Express.Multer.File>, @Body() body: TestWrapper) {
-        console.log('Body:', body);
-        console.log('Files:', files);
-        return { message: "test" };
+    )
+    updatePet(
+        @Param("petId") id: string,
+        @Body("json") json: string,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        try {
+            const parseJson = JSON.parse(json);
+            const validateData = UpdatePetSchema.safeParse(parseJson);
+            if (!validateData.success) throw new BadRequestException("Invalid Field");
+            const data = validateData.data satisfies UpdatePetDto;
+            if (file) data.imageUrl = file.filename;
+            return this.petService.updatePet(id, data);
+        } catch (error) {
+            if (error instanceof BadRequestException) throw error;
+            throw new BadRequestException("Invalid JSON");
+        }
     }
 
+    @Delete(":petId")
+    async deletePet(@Param("petId") id: string) {
+        const deleted = await this.petService.deletePet(id);
+        if (!deleted) throw new BadRequestException("Pet not found");
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Pet deleted"
+        }
+    }
+
+    @Delete("owner/:ownerId")
+    async deletePetsByOwner(@Param("ownerId") ownerId: string) {
+        await this.petService.deletePetsByOwnerId(ownerId);
+        return {
+            statusCode: HttpStatus.OK,
+            message: "All pets deleted"
+        }
+    }
+
+    @Delete()
+    async deleteAllPets() {
+        await this.petService.deleteAllPets();
+        return {
+            statusCode: HttpStatus.OK,
+            message: "All pets deleted"
+        }
+    }
 }

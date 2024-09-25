@@ -14,6 +14,9 @@ import {
   AuthModule,
 } from './modules';
 import { QualificationModule } from './modules/qualification/qualification.module';
+import { BreedModule } from './modules/breeds/breeds.module';
+import { AnimalTypeModule } from './modules/animal-types/animal-types.module';
+import { CustomerModule } from './modules/customer/customer.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,6 +39,9 @@ import { QualificationModule } from './modules/qualification/qualification.modul
     PetModule,
     RequestModule,
     UploadModule,
-    QualificationModule],
+    QualificationModule,
+    BreedModule,
+    AnimalTypeModule,
+    CustomerModule],
 })
 export class AppModule { }

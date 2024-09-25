@@ -15,7 +15,13 @@ export class UserService {
 
     async getUsers(): Promise<User[]> {
         return this.prismaService.user.findMany({
-            include: { customer: true, petsitter: true, admin: true },
+            include: {
+                customer: {
+                    include: {
+                        pets: true
+                    },
+                }, petsitter: true, admin: true
+            },
         });
     }
 
@@ -25,7 +31,13 @@ export class UserService {
                 where: {
                     id: userId
                 },
-                include: { customer: true, petsitter: true, admin: true },
+                include: {
+                    customer: {
+                        include: {
+                            pets: true
+                        },
+                    }, petsitter: true, admin: true
+                },
             });
             return user;
         } catch (error) {
@@ -43,7 +55,13 @@ export class UserService {
             where: {
                 email
             },
-            include: { customer: true, petsitter: true, admin: true },
+            include: {
+                customer: {
+                    include: {
+                        pets: true
+                    },
+                }, petsitter: true, admin: true
+            },
         });
 
         return user;
@@ -54,7 +72,13 @@ export class UserService {
             where: {
                 role
             },
-            include: { customer: true, petsitter: true, admin: true },
+            include: {
+                customer: {
+                    include: {
+                        pets: true
+                    },
+                }, petsitter: true, admin: true
+            },
         })
 
         return users;
