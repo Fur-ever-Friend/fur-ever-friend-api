@@ -16,12 +16,11 @@ export class QualificationService {
                     ...rest,
                     password: hashedPassword,
                     certificateUrl: file.filename,
-                },
+                } as any,
             });
             return qualification;
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                // P2002 is the code for unique constraint violation
                 throw new BadRequestException('Email already exists');
             }
 

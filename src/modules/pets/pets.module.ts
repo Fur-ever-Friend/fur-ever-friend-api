@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { PetsController } from './pets.controller';
-import { PetsService } from './pets.service';
+import { PetController } from './pets.controller';
+import { PetService } from './pets.service';
+import { PrismaModule } from '../prisma/prisma.module';
+import { BreedModule } from '../breeds/breeds.module';
+import { AnimalTypeModule } from '../animal-types/animal-types.module';
+import { CustomerModule } from '../customer/customer.module';
 
 @Module({
-  controllers: [PetsController],
-  providers: [PetsService]
+  imports: [PrismaModule, BreedModule, AnimalTypeModule, CustomerModule],
+  controllers: [PetController],
+  providers: [PetService]
 })
-export class PetsModule {}
+export class PetModule { }

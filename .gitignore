@@ -68,3 +68,6 @@ pnpm-lock.yaml
 
 #prisma
 /prisma/migrations
+
+#uploads
+/uploads
