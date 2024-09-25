@@ -39,7 +39,8 @@ model Petsitter {
   requests            PetsitterRequest[]
   petsitterServiceTag PetsitterServiceTag[]
   favorites           Favorite[]
-  Invitation          Invitation[]
+
+  invitation          Invitation[]
 
   @@map("petsitters")
 }
@@ -110,7 +111,8 @@ model Activity {
 
   payments   Payment[]
   review     Review?
-  Invitation Invitation[]
+
+  invitation Invitation[]
 
   @@map("activities")
 }

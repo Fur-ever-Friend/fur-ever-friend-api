@@ -1,16 +1,41 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './modules/users/users.module';
-import { PetSitterModule } from './modules/pet-sitter/pet-sitter.module';
-import { ActivityModule } from './modules/activity/activity.module';
-import { PaymentModule } from './modules/payment/payment.module';
-import { PetsModule } from './modules/pets/pets.module';
-import { RequestModule } from './modules/request/request.module';
-
+import { MulterModule } from '@nestjs/platform-express';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { ConfigModule } from '@nestjs/config';
+import {
+  UserModule,
+  PetSitterModule,
+  ActivityModule,
+  PaymentModule,
+  PetModule,
+  RequestModule,
+  UploadModule,
+  AuthModule,
+} from './modules';
+import { QualificationModule } from './modules/qualification/qualification.module';
 @Module({
-  imports: [UsersModule, PetSitterModule, ActivityModule, PaymentModule, PetsModule, RequestModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
+    MulterModule.registerAsync({
+      useFactory: () => ({
+        dest: './uploads',
+      }),
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/attachments/',
+    }),
+    AuthModule,
+    UserModule,
+    PetSitterModule,
+    ActivityModule,
+    PaymentModule,
+    PetModule,
+    RequestModule,
+    UploadModule,
+    QualificationModule],
 })
-export class AppModule {}
+export class AppModule { }
