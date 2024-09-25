@@ -17,6 +17,7 @@ import { QualificationModule } from './modules/qualification/qualification.modul
 import { BreedModule } from './modules/breeds/breeds.module';
 import { AnimalTypeModule } from './modules/animal-types/animal-types.module';
 import { CustomerModule } from './modules/customer/customer.module';
+import { AdminModule } from './modules/admin/admin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -42,6 +43,7 @@ import { CustomerModule } from './modules/customer/customer.module';
     QualificationModule,
     BreedModule,
     AnimalTypeModule,
-    CustomerModule],
+    CustomerModule,
+    AdminModule],
 })
 export class AppModule { }

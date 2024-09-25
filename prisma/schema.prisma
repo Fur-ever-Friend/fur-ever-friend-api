@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(uuid())
-  email     String  @unique
-  password  String
-  firstname String? @db.VarChar(30)
-  lastname  String? @db.VarChar(30)
-  phone     String? @db.VarChar(20)
-  role      Role
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password      String
+  firstname     String?      @db.VarChar(30)
+  lastname      String?      @db.VarChar(30)
+  phone         String?      @db.VarChar(20)
+  role          Role
+  accountStatus AccountState @default(ACTIVE) @map("account_status")
 
   customer     Customer?
   petsitter    Petsitter?
@@ -26,13 +27,12 @@ model User {
 }
 
 model Petsitter {
-  id             String       @id @default(uuid())
-  user           User         @relation(fields: [userId], references: [id])
-  userId         String       @unique @map("user_id")
-  information    String       @default("")
-  rating         Float        @default(4.0)
-  accountStatus  AccountState @default(ACTIVE) @map("account_status")
-  certificateUrl String       @map("certificate_url")
+  id             String @id @default(uuid())
+  user           User   @relation(fields: [userId], references: [id])
+  userId         String @unique @map("user_id")
+  information    String @default("")
+  rating         Float  @default(4.0)
+  certificateUrl String @map("certificate_url")
 
   activities Activity[]
 
@@ -54,10 +54,9 @@ model PetsitterServiceTag {
 }
 
 model Customer {
-  id            String       @id @default(uuid())
-  user          User         @relation(fields: [userId], references: [id])
-  userId        String       @unique @map("user_id")
-  accountStatus AccountState @default(ACTIVE) @map("account_status")
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique @map("user_id")
 
   activities Activity[]
   pets       Pet[]
@@ -175,11 +174,11 @@ model Pet {
   allergy     String?
   otherDetail String? @map("other_detail")
 
-  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
-  animalTypeId String     @map("animal_type_id")
+  animalType   AnimalType? @relation(fields: [animalTypeId], references: [id], onDelete: SetNull)
+  animalTypeId String?     @map("animal_type_id")
 
-  breed   Breed  @relation(fields: [breedId], references: [id])
-  breedId String @map("breed_id")
+  breed   Breed?  @relation(fields: [breedId], references: [id], onDelete: SetNull)
+  breedId String? @map("breed_id")
 
   ownerId String   @map("owner_id")
   owner   Customer @relation(fields: [ownerId], references: [id])
@@ -203,8 +202,8 @@ model Breed {
   id   String @id @default(uuid())
   name String @db.VarChar(30)
 
-  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
-  animalTypeId String     @map("animal_type_id")
+  animalType   AnimalType? @relation(fields: [animalTypeId], references: [id], onDelete: SetNull)
+  animalTypeId String?     @map("animal_type_id")
 
   pets Pet[]
 
@@ -230,7 +229,7 @@ model PetsitterRequest {
 model ActivityService {
   id String @id @default(uuid())
 
-  pet   Pet    @relation(fields: [petId], references: [id])
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
   petId String @map("pet_id")
 
   detail String
