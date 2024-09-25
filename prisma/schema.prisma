@@ -36,9 +36,21 @@ model Petsitter {
 
   activities Activity[]
 
-  requests PetsitterRequest[]
+  requests            PetsitterRequest[]
+  petsitterServiceTag PetsitterServiceTag[]
+  favorites           Favorite[]
+  invitation          Invitation[]
 
   @@map("petsitters")
+}
+
+model PetsitterServiceTag {
+  id          String      @id @default(uuid())
+  serviceType ServiceType @map("service_type")
+  petsitter   Petsitter   @relation(fields: [petsitterId], references: [id])
+  petsitterId String      @map("petsitter_id")
+
+  @@map("petsitter_service_tags")
 }
 
 model Customer {
@@ -49,8 +61,19 @@ model Customer {
 
   activities Activity[]
   pets       Pet[]
+  favorites  Favorite[]
 
   @@map("customers")
+}
+
+model Favorite {
+  id          String    @id @default(uuid())
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String    @map("customer_id")
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id], onDelete: Cascade)
+  petsitterId String    @map("petsitter_id")
+
+  @@map("favorites")
 }
 
 model Admin {
@@ -83,11 +106,11 @@ model Activity {
 
   progresses ActivityProgress[]
 
-  payment ActivityPayment?
-
   services ActivityService[]
 
-  review Review?
+  payments   Payment[]
+  review     Review?
+  invitation Invitation[]
 
   @@map("activities")
 }
@@ -116,22 +139,14 @@ model ProgressImage {
   @@map("progress_images")
 }
 
-model ActivityPayment {
-  id    String @id @default(uuid())
-  state State  @default(PENDING)
-
-  activity   Activity @relation(fields: [activityId], references: [id])
-  activityId String   @unique @map("activity_id")
-
-  @@map("activity_payments")
-}
-
 model Payment {
   id            String   @id @default(uuid())
   timestamp     DateTime @default(now())
   amount        Float
   state         State    @default(PENDING)
   transactionId String   @unique @map("transaction_id")
+  activity      Activity @relation(fields: [activityId], references: [id])
+  activityId    String   @unique @map("activity_id")
 
   @@map("payments")
 }
@@ -203,7 +218,7 @@ model PetsitterRequest {
   price     Float
   message   String?
 
-  activity   Activity @relation(fields: [activityId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
   petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
@@ -218,10 +233,11 @@ model ActivityService {
   pet   Pet    @relation(fields: [petId], references: [id])
   petId String @map("pet_id")
 
-  task   String
   detail String
 
-  activity   Activity @relation(fields: [activityId], references: [id])
+  serviceType ServiceType @map("service_type")
+
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
   status Boolean @default(false)
@@ -235,7 +251,7 @@ model Review {
   content   String
   rating    Int
 
-  activity   Activity @relation(fields: [activityId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @unique @map("activity_id")
 
   @@map("reviews")
@@ -267,6 +283,20 @@ model ReportImage {
   @@map("report_images")
 }
 
+model Invitation {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now()) @map("created_at")
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId String   @map("activity_id")
+
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitterId String    @map("petsitter_id")
+
+  link String
+
+  @@map("invitations")
+}
+
 enum ReportType {
   SERVICE_QUALITY
   CUSTOMER_BEHAVIOR
@@ -296,21 +326,20 @@ enum State {
 enum AccountState {
   ACTIVE
   INACTIVE
+  BANNED
 
   @@map("account_states")
 }
 
 enum ActivityState {
-  PENDING
-  REQUESTED
-  UNSIGNED
-  CANCELLED
-  SCHEDULED
-  ASSIGNED
-  IN_PROGRESS
-  RETURNING
-  FAILED
-  COMPLETED
+  PENDING // Petsitter: Requested, Customer: Unassigned
+  REJECTED // for petsitter after customer rejected
+  CANCELLED // activity has been cancelled by customer
+  ASSIGNED // Petsitter: Scheduled, Customer: Assigned
+  IN_PROGRESS // for petsitter after customer accepted
+  RETURNING // for petsitter after activity end
+  FAILED // activity failed
+  COMPLETED // activity completed
 
   @@map("activity_states")
 }
@@ -320,4 +349,12 @@ enum Gender {
   FEMALE
 
   @@map("genders")
+}
+
+enum ServiceType {
+  PET_WALKING
+  PET_BOARDING
+  PET_GROOMING
+
+  @@map("service_types")
 }

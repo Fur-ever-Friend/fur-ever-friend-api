@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/users.service';
 import { validatePassword } from 'src/utils';
@@ -11,10 +11,7 @@ export class AuthService {
         private readonly userService: UserService,
     ) { }
 
-    async validateUser(email: string, pass: string): Promise<Omit<User, 'password'>> {
-        if (typeof email !== 'string' || !email.includes('@')) {
-            throw new BadRequestException('Invalid email format');
-        }
+    async localValidate(email: string, pass: string): Promise<Omit<User, 'password'>> {
         const user = await this.userService.getUserByEmail(email);
         if (!user) throw new NotFoundException("email not found");
         if (await validatePassword(pass, user.password)) {
@@ -22,6 +19,14 @@ export class AuthService {
             return result;
         } else throw new BadRequestException("Invalid email or password");
 
+    }
+
+    async validateUser(payload: { sub: string, role: Role }): Promise<Omit<User, 'password'>> {
+        const user = await this.userService.getUserById(payload.sub);
+        if (!user) throw new NotFoundException("email not found");
+        if (user.role !== payload.role) throw new ForbiddenException();
+        const { password, ...result } = user;
+        return result;
     }
 
     async login({ userId, role }: { userId: string, role: Role }): Promise<{ accessToken: string }> {

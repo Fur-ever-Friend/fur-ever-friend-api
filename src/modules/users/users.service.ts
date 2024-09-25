@@ -29,7 +29,11 @@ export class UserService {
             });
             return user;
         } catch (error) {
-            console.log("[ERROR]", error);
+            if (error instanceof Error) {
+                console.log("[ERROR]", error.message);
+            } else {
+                console.log("[ERROR]", error);
+            }
             throw error;
         }
     }
