@@ -1,12 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role, User } from '@prisma/client';
-import { hashPassword } from 'src/utils';
+import { hashPassword } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto } from './dto/create-petsitter.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePetsitterDto, UpdateUserWithRoleDto } from './dto/update-petsitter.dto';
-import { filterAllowedFields } from 'src/utils/filterAllowField';
+import { filterAllowedFields } from 'src/common/utils/filterAllowField';
 
 @Injectable()
 export class UserService {
@@ -15,6 +15,7 @@ export class UserService {
         private readonly qualificationService: QualificationService,
     ) { }
 
+    // Get all users with their role details
     async getUsers(): Promise<User[]> {
         return this.prismaService.user.findMany({
             include: {
@@ -27,6 +28,7 @@ export class UserService {
         });
     }
 
+    // Get user by ID
     async getUserById(userId: string): Promise<User> {
         try {
             const user = await this.prismaService.user.findUnique({
@@ -44,30 +46,35 @@ export class UserService {
             if (!user) throw new NotFoundException('User not found');
             return user;
         } catch (error) {
-            if (error instanceof Error) {
-                console.log("[ERROR]", error.message);
-            } else {
-                console.log("[ERROR]", error);
-            }
             throw error;
         }
     }
 
     async getUserByEmail(email: string): Promise<User> {
-        const user = await this.prismaService.user.findUnique({
-            where: {
-                email
-            },
-            include: {
-                customer: {
-                    include: {
-                        pets: true
-                    },
-                }, petsitter: true, admin: true
-            },
-        });
-
-        return user;
+        try {
+            const user = await this.prismaService.user.findUnique({
+                where: {
+                    email
+                },
+                include: {
+                    customer: {
+                        include: {
+                            pets: true
+                        },
+                    }, petsitter: true, admin: true
+                },
+            });
+            if (!user) throw new NotFoundException('User not found');
+            return user;
+        } catch (err) {
+            if (err instanceof HttpException) {
+                console.log(`[HttpException] Code: ${err.getStatus()} Message: ${err.message}`);
+                throw err;
+            } else {
+                console.log("[ERROR]", err);
+                throw new InternalServerErrorException()
+            }
+        }
     }
 
     async getUsersByRole(role: string): Promise<User[]> {
@@ -127,6 +134,52 @@ export class UserService {
             }
 
             throw error;
+        }
+    }
+
+    async createUserV2({ password, role, ...rest }: CreateUserDto): Promise<User> {
+        try {
+            if (!['CUSTOMER', 'ADMIN'].includes(role)) throw new BadRequestException("Invalid role");
+            const hashedPassword = await hashPassword(password);
+
+            let roleData = {};
+
+            switch (role) {
+                case 'CUSTOMER':
+                    roleData = { customer: { create: {} } };
+                    break;
+                case 'ADMIN':
+                    roleData = { admin: { create: {} } };
+                    break;
+                default:
+                    throw new BadRequestException("Invalid role");
+            }
+
+            const user = await this.prismaService.user.create({
+                data: {
+                    password: hashedPassword,
+                    role,
+                    ...rest,
+                    ...roleData
+                },
+                include: {
+                    customer: role === "CUSTOMER" ? true : false,
+                    admin: role === "ADMIN" ? true : false,
+                }
+            });
+
+            return user;
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+                throw new BadRequestException('Email already exists');
+            } else if (error instanceof HttpException) {
+                console.log("HTTP EXCEPTION Error:", error.message)
+                throw error
+            } else {
+                console.log("ERROR:", error)
+                throw error;
+            }
+
         }
     }
 
@@ -212,7 +265,7 @@ export class UserService {
 
     async updateUser(userId: string, data: UpdateUserWithRoleDto): Promise<User> {
         const { role, userData } = data
-        const { password, ...rest } = filterAllowedFields(userData, ['password', 'firstname', 'lastname', 'phone']);
+        const { password, ...rest } = filterAllowedFields(userData, ['password', 'firstname', 'lastname', 'phone', 'refreshToken']);
         let hashedPassword: string | undefined = undefined;
         if (password) {
             hashedPassword = await hashPassword(password);
@@ -258,4 +311,16 @@ export class UserService {
         }
     }
 
+    async updateRefreshToken(userId: string, refreshToken: string | null) {
+        // let hashedRefreshToken: string | null = null;
+        // if (refreshToken) hashedRefreshToken = await hashPassword(refreshToken);
+        return this.prismaService.user.update({
+            where: {
+                id: userId
+            },
+            data: {
+                refreshToken
+            }
+        });
+    }
 }

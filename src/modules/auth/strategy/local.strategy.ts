@@ -15,9 +15,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         if (typeof email !== 'string' || !email.includes('@')) {
             throw new UnauthorizedException('Invalid email format');
         }
-        const user = await this.authService.localValidate(email, password)
-        if (!user) throw new UnauthorizedException("Incorrect username or password!")
-        return user
+        const user = await this.authService.validateLogin(email, password)
+        return user;
     }
 
 }
