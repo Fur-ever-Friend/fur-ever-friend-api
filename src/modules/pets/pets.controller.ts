@@ -5,7 +5,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { CreatePetDto, CreatePetSchema } from './dto/create-pet.dto';
 import { UpdatePetDto, UpdatePetSchema } from './dto/update-pet.dto';
-import { checkFileNameEncoding, generateRandomFileName } from 'src/utils/checkFilenameEncoding';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
 @Controller('pets')
 export class PetController {
     constructor(private readonly petService: PetService) { }
