@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { QualificationDto } from './dto/qualification.dto';
 import { Prisma, Qualification } from '@prisma/client';
-import { hashPassword } from 'src/utils';
+import { hashPassword } from 'src/common/utils';
 
 @Injectable()
 export class QualificationService {

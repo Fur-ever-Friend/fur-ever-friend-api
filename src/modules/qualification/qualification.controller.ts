@@ -4,7 +4,7 @@ import { QualificationDto, QualificationSchema } from './dto/qualification.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from "uuid";
-import { checkFileNameEncoding, generateRandomFileName } from 'src/utils/checkFilenameEncoding';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
 
 @Controller('qualifications')
 export class QualificationController {
