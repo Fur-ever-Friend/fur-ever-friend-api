@@ -1,5 +1,5 @@
 import { Role } from '@prisma/client';
-import { MaxLength, MinLength, IsUUID, IsEnum, IsOptional } from 'class-validator';
+import { IsUUID, IsEnum, IsOptional } from 'class-validator';
 
 export class JwtPayload {
 
@@ -14,4 +14,10 @@ export class JwtPayload {
 
     @IsOptional()
     exp?: number;
+
+    @IsOptional()
+    nbf?: number;
+
+    @IsOptional()
+    jti?: string;
 }

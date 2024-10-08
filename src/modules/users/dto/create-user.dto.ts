@@ -1,4 +1,5 @@
-import { IsEmail, IsOptional, IsPhoneNumber, IsString, Length, Matches, MaxLength, MinLength } from "class-validator";
+import { Role } from "@prisma/client";
+import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, Length, Matches, MaxLength, MinLength } from "class-validator";
 
 export class CreateUserDto {
     @IsEmail({}, { message: "Invalid email" })
@@ -21,6 +22,9 @@ export class CreateUserDto {
     @IsOptional()
     @Matches(/0\d{9}/, { message: "Invalid phone number" })
     phone: string
+
+    @IsEnum(Role, { message: "Invalid role" })
+    role: Role
 
     @IsOptional()
     @IsString()

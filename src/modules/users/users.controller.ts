@@ -16,51 +16,55 @@ import { Request } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UpdateUserWithRoleDto } from './dto/update-petsitter.dto';
+import { User } from '@prisma/client';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('users')
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
-    @Post() // POST /users?role={ROLE}  - Create a new user
-    async createUser(@Query("role") role: string, @Body() data: CreateUserDto) {
-        if (role === undefined) throw new BadRequestException('Role is required');
-        const response = await this.userService.createUser(role.toUpperCase(), data);
-        return {
-            statusCode: HttpStatus.CREATED,
-            message: 'User created',
-            data: response,
-        }
-    }
+    // @Post() // POST /users?role={ROLE}  - Create a new user
+    // async createUser(@Query("role") role: string, @Body() data: CreateUserDto) {
+    //     if (role === undefined) throw new BadRequestException('Role is required');
+    //     const response = await this.userService.createUser(role.toUpperCase(), data);
+    //     return {
+    //         statusCode: HttpStatus.CREATED,
+    //         message: 'User created',
+    //         data: response,
+    //     }
+    // }
 
-    @Post(":email") // POST /users/:email  - Create a new petsitter
+    // for test // POST /users/:email  - Create a new petsitter
+    @Post(":email")
     async createPetsitter(@Param("email") email: string) {
         const response = await this.userService.createPetsitter(email);
         return {
             statusCode: HttpStatus.CREATED,
-            message: 'Petsitter created',
+            message: 'Create Petsitter Successfully',
             data: response,
         }
     }
 
-    @Get() // GET /users  - Get all users
-    async getUsers(@Query("role") role: string) {
-        if (role === undefined) role = "ALL";
-        const response = await this.userService.getUsersByRole(role.toUpperCase());
-        return {
-            statusCode: HttpStatus.OK,
-            message: 'Users found',
-            data: response,
-        }
-    }
+    // move to admin controller
+    // @Get() // GET /users  - Get all users
+    // async getUsers(@Query("role") role: string) {
+    //     if (role === undefined) role = "ALL";
+    //     const response = await this.userService.getUsersByRole(role.toUpperCase());
+    //     return {
+    //         statusCode: HttpStatus.OK,
+    //         message: 'Users found',
+    //         data: response,
+    //     }
+    // }
 
     @UseGuards(JwtAuthGuard)
     @Get("me") // GET /users/me  - Get current user
-    getCurrentUser(@Req() req: Request) {
-        const user = req.user;
+    getCurrentUser2(@CurrentUser() user: User) {
+        const { password, refreshToken, ...rest } = user;
         return {
             statusCode: HttpStatus.OK,
-            message: 'User found',
-            data: user,
+            message: 'User Founded',
+            data: rest,
         }
     }
 
@@ -81,7 +85,7 @@ export class UserController {
 
         return {
             statusCode: HttpStatus.OK,
-            message: 'User updated',
+            message: "Update User Successfully",
             data: response,
         }
     }
@@ -91,7 +95,7 @@ export class UserController {
         const user = await this.userService.getUserById(userId);
         return {
             statusCode: HttpStatus.OK,
-            message: 'User found',
+            message: 'User Founded',
             data: user,
         }
     }
