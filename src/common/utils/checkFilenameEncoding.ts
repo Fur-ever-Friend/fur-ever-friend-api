@@ -9,6 +9,5 @@ export function checkFileNameEncoding(fileName: string): boolean {
 }
 
 export function generateRandomFileName(): string {
-    const randomString = randomBytes(16).toString('hex');
-    return randomString;
+    return randomBytes(16).toString('hex');
 }
