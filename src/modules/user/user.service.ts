@@ -1,12 +1,12 @@
 import { BadRequestException, ForbiddenException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AccountState, Prisma, Role, State, User } from '@prisma/client';
+import { AccountState, Prisma, State, User } from '@prisma/client';
 import { hashPassword } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto } from './dto/create-petsitter.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePetsitterDto, UpdateUserDto } from './dto/update-petsitter.dto';
-import { allowFieldUpdate, filterAllowedFields } from 'src/common/utils/filterAllowField';
+import { allowFieldUpdate } from 'src/common/utils/filterAllowField';
 import { SearchType, SortBy, SortOrder, UserQueryDto } from './dto/user-query-param.dto';
 
 @Injectable()
@@ -153,6 +153,13 @@ export class UserService {
             const user = await this.prismaService.user.findUnique({
                 where: {
                     id: userId
+                },
+                include: {
+                    customer: {
+                        include: {
+                            pets: true
+                        },
+                    }, petsitter: true, admin: true
                 },
             });
             if (!user) throw new NotFoundException('User not found');
