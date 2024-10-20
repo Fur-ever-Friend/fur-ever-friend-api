@@ -11,3 +11,40 @@ export const filterAllowedFields = (input: any, allowedFields: string[]) => {
     });
     return filteredData;
 };
+
+type AllowedFields<T, K extends keyof T> = {
+    [P in K]?: T[P];
+};
+
+class FieldUpdateError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'FieldUpdateError';
+    }
+}
+
+export function allowFieldUpdate<T>(allowedFields: (keyof T)[], data: Partial<T>): Partial<T> {
+    if (!allowedFields || allowedFields.length === 0) {
+        throw new FieldUpdateError('No allowed fields provided.');
+    }
+
+    if (!data || typeof data !== 'object') {
+        throw new FieldUpdateError('Invalid data object.');
+    }
+
+    const result: Partial<T> = {};
+    let hasValidFields = false;
+
+    allowedFields.forEach((field) => {
+        if (field in data) {
+            result[field] = data[field];
+            hasValidFields = true;
+        }
+    });
+
+    if (!hasValidFields) {
+        throw new FieldUpdateError('No valid fields found to update.');
+    }
+
+    return result;
+}

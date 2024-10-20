@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { BreedService } from './breeds.service';
+import { BreedService } from './breed.service';
 
 @Controller('breeds')
 export class BreedController {

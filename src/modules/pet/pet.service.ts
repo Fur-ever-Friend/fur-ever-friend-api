@@ -3,8 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Pet } from '@prisma/client';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { BreedService } from '../breeds/breeds.service';
-import { AnimalTypeService } from '../animal-types/animal-types.service';
+import { BreedService } from '../breed/breed.service';
+import { AnimalTypeService } from '../animal-type/animal-type.service';
 import { CustomerService } from '../customer/customer.service';
 import { UpdatePetDto } from './dto/update-pet.dto';
 

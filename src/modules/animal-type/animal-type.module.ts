@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AnimalTypeController } from './animal-types.controller';
-import { AnimalTypeService } from './animal-types.service';
+import { AnimalTypeController } from './animal-type.controller';
+import { AnimalTypeService } from './animal-type.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({

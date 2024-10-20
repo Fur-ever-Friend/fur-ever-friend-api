@@ -13,6 +13,7 @@ model User {
   password      String
   firstname     String?      @db.VarChar(30)
   lastname      String?      @db.VarChar(30)
+  avatar        String?      @map("avatar")
   phone         String?      @db.VarChar(20)
   refreshToken  String?      @unique @map("refresh_token")
   role          Role
@@ -31,17 +32,20 @@ model Petsitter {
   id             String @id @default(uuid())
   user           User   @relation(fields: [userId], references: [id])
   userId         String @unique @map("user_id")
-  information    String @default("")
+  quote          String @default("")
+  location       String @default("")
+  about          String @default("")
+  experience     String @default("")
   rating         Float  @default(4.0)
   certificateUrl String @map("certificate_url")
-
+  coverImages   String[] @map("cover_images")
   activities Activity[]
 
   requests            PetsitterRequest[]
   petsitterServiceTag PetsitterServiceTag[]
   favorites           Favorite[]
 
-  invitation          Invitation[]
+  invitation  Invitation[]
 
   @@map("petsitters")
 }
@@ -109,8 +113,8 @@ model Activity {
 
   services ActivityService[]
 
-  payments   Payment[]
-  review     Review?
+  payments Payment[]
+  review   Review?
 
   invitation Invitation[]
 
@@ -154,14 +158,15 @@ model Payment {
 }
 
 model Qualification {
-  id             String @id @default(uuid())
-  email          String @unique @db.VarChar(50)
+  id             String   @id @default(uuid())
+  email          String   @unique @db.VarChar(50)
   password       String
-  firstname      String @db.VarChar(30)
-  lastname       String @db.VarChar(30)
-  phone          String @db.VarChar(20)
-  state          State  @default(PENDING)
-  certificateUrl String @map("certificate_url")
+  firstname      String   @db.VarChar(30)
+  lastname       String   @db.VarChar(30)
+  phone          String   @db.VarChar(20)
+  state          State    @default(PENDING)
+  certificateUrl String   @map("certificate_url")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("qualifications")
 }
@@ -260,11 +265,11 @@ model Review {
 }
 
 model Report {
-  id          String        @id @default(uuid())
-  createdAt   DateTime      @default(now()) @map("created_at")
-  type        ReportType
-  content     String
-  reportImage ReportImage[]
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now()) @map("created_at")
+  type         ReportType
+  content      String
+  reportImages String[]   @map("report_images")
 
   reporter   User   @relation("reporter", fields: [reporterId], references: [id])
   reporterId String @map("reporter_id")
@@ -273,16 +278,6 @@ model Report {
   reportedId String @map("reported_id")
 
   @@map("reports")
-}
-
-model ReportImage {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now()) @map("created_at")
-  imageUrl  String   @map("image_url")
-  report    Report   @relation(fields: [reportId], references: [id])
-  reportId  String   @map("report_id")
-
-  @@map("report_images")
 }
 
 model Invitation {

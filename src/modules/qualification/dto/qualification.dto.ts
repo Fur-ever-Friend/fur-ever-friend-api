@@ -1,3 +1,5 @@
+import { State } from "@prisma/client";
+import { IsEnum } from "class-validator";
 import { z } from "zod";
 
 export const QualificationSchema = z.object({
@@ -27,3 +29,8 @@ export const QualificationSchema = z.object({
 });
 
 export type QualificationDto = z.infer<typeof QualificationSchema>;
+
+export class UpdateQualificationStateDto {
+    @IsEnum(State)
+    state: State;
+}
