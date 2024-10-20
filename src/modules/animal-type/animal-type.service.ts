@@ -24,4 +24,23 @@ export class AnimalTypeService {
             }
         });
     }
+
+    async addAnimalType(name: string) {
+        return this.prismaService.animalType.create({
+            data: {
+                name
+            }
+        });
+    }
+
+    async updateAnimalType(id: string, name: string) {
+        return this.prismaService.animalType.update({
+            where: {
+                id
+            },
+            data: {
+                name
+            }
+        });
+    }
 }

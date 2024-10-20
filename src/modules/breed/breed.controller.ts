@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { BreedService } from './breed.service';
+import { BreedDto } from './dto/breed.dto';
 
 @Controller('breeds')
 export class BreedController {
@@ -18,5 +19,10 @@ export class BreedController {
     @Get("animalType/:animalTypeId")
     async getBreedsByAnimalTypeId(@Param("animalTypeId") animalTypeId: string) {
         return this.breedService.getBreedsByAnimalTypeId(animalTypeId);
+    }
+
+    @Post()
+    async addBreed(@Body() { name, animalTypeId }: BreedDto) {
+        return this.breedService.addBreed(name, animalTypeId);
     }
 }
