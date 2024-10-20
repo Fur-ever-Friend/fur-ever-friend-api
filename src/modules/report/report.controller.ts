@@ -1,17 +1,69 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, HttpCode, UseGuards, UseInterceptors, UploadedFiles, HttpStatus, BadRequestException, HttpException } from '@nestjs/common';
 import { ReportService } from './report.service';
-import { CreateReportDto } from './dto/create-report.dto';
-import { UpdateReportDto } from './dto/update-report.dto';
+import { CreateReportSchema } from './dto/create-report.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
+import { diskStorage } from 'multer';
+import { v4 as uuidV4 } from 'uuid';
 
-@Controller('report')
+@Controller('reports')
 export class ReportController {
-  constructor(private readonly reportService: ReportService) {}
+  constructor(
+    private readonly reportService: ReportService,
+  ) { }
 
+  @HttpCode(201)
   @Post()
-  create(@Body() createReportDto: CreateReportDto) {
-    return this.reportService.create(createReportDto);
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('reportImages', 5, {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (_, file, callback) => {
+          const [originalFilename, fileExt] = file.originalname.split('.');
+          const extension = file.mimetype.split("/")[1];
+          const id = uuidV4();
+          let filename: string;
+          if (!checkFileNameEncoding(originalFilename))
+            filename = `${id}-${generateRandomFileName()}.${extension}`;
+          else
+            filename = `${originalFilename}-${id}.${fileExt}`;
+          callback(null, filename);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter(_, file, callback) {
+        const validExtensions = /\.(jpg|jpeg|png)$/;
+        if (!file.originalname.match(validExtensions)) {
+          return callback(null, false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[]) {
+    try {
+      const jsonParsed = JSON.parse(jsonStr);
+      const createReportDto = CreateReportSchema.parse(jsonParsed);
+      const reportImages = files.map((file) => file.filename);
+      const response = await this.reportService.create(createReportDto, reportImages);
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'Report created successfully',
+        data: response,
+      }
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      throw new BadRequestException('Invalid JSON');
+    }
   }
 
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   findAll() {
     return this.reportService.findAll();
@@ -19,16 +71,7 @@ export class ReportController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.reportService.findOne(+id);
+    return this.reportService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReportDto: UpdateReportDto) {
-    return this.reportService.update(+id, updateReportDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reportService.remove(+id);
-  }
 }

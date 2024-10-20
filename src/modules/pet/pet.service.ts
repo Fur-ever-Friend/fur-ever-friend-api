@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Pet } from '@prisma/client';
+import { Pet, Prisma } from '@prisma/client';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { BreedService } from '../breed/breed.service';
@@ -53,8 +53,8 @@ export class PetService {
         });
     }
 
-    async createPet(data: CreatePetDto): Promise<Pet> {
-        const { ownerId, breedId, animalTypeId, ...rest } = data;
+    async createPet(data: CreatePetDto, ownerId: string): Promise<Pet> {
+        const { breedId, animalTypeId, ...rest } = data;
 
         const owner = await this.customerService.getCustomerById(ownerId);
         if (!owner) throw new NotFoundException("Owner not found");
@@ -134,14 +134,17 @@ export class PetService {
         }
     }
 
-    async deletePet(id: string): Promise<Boolean> {
+    async deletePet(id: string, ownerId: string): Promise<Boolean> {
         try {
-            const pet = await this.prismaService.pet.delete({
+            if (!ownerId) throw new InternalServerErrorException("Owner Id is required");
+            if (!id) throw new InternalServerErrorException("Pet Id is required");
+
+            await this.prismaService.pet.delete({
                 where: {
-                    id
+                    id,
+                    ownerId
                 }
             })
-            if (!pet) throw new NotFoundException("Pet not found");
             return true;
         } catch (error) {
             if (error instanceof PrismaClientKnownRequestError) {

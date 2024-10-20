@@ -1,4 +1,17 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Patch,
+    Post,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
+} from '@nestjs/common';
 import { PetService } from './pet.service';
 import { v4 as uuidV4 } from "uuid";
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -6,10 +19,18 @@ import { diskStorage } from 'multer';
 import { CreatePetDto, CreatePetSchema } from './dto/create-pet.dto';
 import { UpdatePetDto, UpdatePetSchema } from './dto/update-pet.dto';
 import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role, User } from '@prisma/client';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
 @Controller('pets')
 export class PetController {
     constructor(private readonly petService: PetService) { }
 
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Post()
     @UseInterceptors(
         FileInterceptor('file', {
@@ -25,9 +46,9 @@ export class PetController {
                     callback(null, filename);
                 },
             }),
-            limits: { fileSize: 5 * 1024 * 1024 },
+            limits: { fileSize: 10 * 1024 * 1024 },
             fileFilter(_, file, callback) {
-                const validExtensions = /\.(jpg|jpeg|png|gif)$/;
+                const validExtensions = /\.(jpg|jpeg|png)$/;
                 if (!file.originalname.match(validExtensions)) {
                     return callback(null, false);
                 }
@@ -36,16 +57,18 @@ export class PetController {
         }),
     )
     async create(
+        @CurrentUser() user: User,
         @Body("json") json: string,
         @UploadedFile() file: Express.Multer.File
     ) {
         try {
+            console.log("id", user["customer"]["id"]);
             const jsonParse = JSON.parse(json);
             const validateData = CreatePetSchema.safeParse(jsonParse);
             if (!validateData.success) throw new BadRequestException("Invalid Field");
             const data = validateData.data satisfies CreatePetDto;
             data.imageUrl = file.filename;
-            return this.petService.createPet(data);
+            return this.petService.createPet(data, user["customer"]["id"]);
         } catch (error) {
             throw new BadRequestException("Invalid JSON");
         }
@@ -61,12 +84,16 @@ export class PetController {
         return this.petService.getPetById(id);
     }
 
-    @Get("owner/:ownerId")
-    getPetsByOwner(@Param("ownerId") ownerId: string) {
-        return this.petService.getPetsByOwnerId(ownerId);
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Get("owner")
+    getPetsByOwner(@CurrentUser() user: User) {
+        return this.petService.getPetsByOwnerId(user["customer"]["id"]);
     }
 
-    @Patch(":petId")
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Patch(":id")
     @UseInterceptors(
         FileInterceptor('file', {
             storage: diskStorage({
@@ -81,7 +108,7 @@ export class PetController {
                     callback(null, filename);
                 },
             }),
-            limits: { fileSize: 5 * 1024 * 1024 },
+            limits: { fileSize: 10 * 1024 * 1024 },
             fileFilter(_, file, callback) {
                 const validExtensions = /\.(jpg|jpeg|png|gif)$/;
                 if (!file.originalname.match(validExtensions)) {
@@ -92,7 +119,7 @@ export class PetController {
         }),
     )
     updatePet(
-        @Param("petId") id: string,
+        @Param("id") id: string,
         @Body("json") json: string,
         @UploadedFile() file: Express.Multer.File
     ) {
@@ -109,9 +136,11 @@ export class PetController {
         }
     }
 
-    @Delete(":petId")
-    async deletePet(@Param("petId") id: string) {
-        const deleted = await this.petService.deletePet(id);
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Delete(":id")
+    async deletePet(@Param("id") id: string, @CurrentUser() user: User) {
+        const deleted = await this.petService.deletePet(id, user["customer"]["id"]);
         if (!deleted) throw new BadRequestException("Pet not found");
         return {
             statusCode: HttpStatus.OK,
@@ -119,6 +148,8 @@ export class PetController {
         }
     }
 
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Delete("owner/:ownerId")
     async deletePetsByOwner(@Param("ownerId") ownerId: string) {
         await this.petService.deletePetsByOwnerId(ownerId);
@@ -128,6 +159,8 @@ export class PetController {
         }
     }
 
+    @Roles(Role.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Delete()
     async deleteAllPets() {
         await this.petService.deleteAllPets();

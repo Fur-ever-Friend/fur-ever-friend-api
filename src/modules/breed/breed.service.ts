@@ -24,7 +24,7 @@ export class BreedService {
             }
         });
         if (!breed) throw new NotFoundException("Breed not found");
-        
+
         return breed;
     }
 
@@ -35,6 +35,15 @@ export class BreedService {
             },
             include: {
                 animalType: true
+            }
+        });
+    }
+
+    async addBreed(name: string, animalTypeId: string): Promise<Breed> {
+        return this.prismaService.breed.create({
+            data: {
+                name,
+                animalTypeId
             }
         });
     }
