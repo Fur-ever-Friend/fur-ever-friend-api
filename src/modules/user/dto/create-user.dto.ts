@@ -26,8 +26,8 @@ export class CreateUserDto {
     @IsEnum(Role, { message: "Invalid role" })
     role: Role
 
-    @IsOptional()
     @IsString()
+    @IsOptional()
     certificateUrl: string
 
 }

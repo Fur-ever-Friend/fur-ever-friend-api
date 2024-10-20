@@ -13,6 +13,7 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe({ transform: true, stopAtFirstError: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.setGlobalPrefix('api');
   await app.listen(3000);
 }
 bootstrap();

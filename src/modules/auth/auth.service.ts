@@ -1,10 +1,10 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../users/users.service';
+import { UserService } from '../user/user.service';
 import { validatePassword, verify } from 'src/common/utils';
 import { Role, User } from '@prisma/client';
 import { JwtPayload } from './dto';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
@@ -51,9 +51,10 @@ export class AuthService {
 
     async register(createUserDto: CreateUserDto): Promise<AuthResponseDto> {
         try {
-            const user = await this.userService.createUserV2(createUserDto);
+            const user = await this.userService.createUser(createUserDto);
             const tokens = await this.getTokens(user.id, user.role);
             await this.userService.updateRefreshToken(user.id, tokens.refreshToken);
+            user.refreshToken = tokens.refreshToken;
             return {
                 user,
                 token: tokens

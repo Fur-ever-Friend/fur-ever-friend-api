@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { PetService } from './pets.service';
+import { PetService } from './pet.service';
 import { v4 as uuidV4 } from "uuid";
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';

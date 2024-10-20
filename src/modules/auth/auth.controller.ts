@@ -2,7 +2,7 @@ import { Controller, Post, Req, UseGuards, Res, HttpCode, HttpStatus, Body, Forb
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
 import { User } from '@prisma/client';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LocalAuthGuard } from './guard/local-auth.guard';
 import { RefreshJwtAuthGuard } from './guard/refresh-auth.guard';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';

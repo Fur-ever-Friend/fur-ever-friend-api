@@ -11,16 +11,13 @@ import {
   PetModule,
   RequestModule,
   AuthModule,
+  QualificationModule,
+  CustomerModule,
+  BreedModule,
+  AnimalTypeModule,
+  ReportModule,
 } from './modules';
-import { QualificationModule } from './modules/qualification/qualification.module';
-import { BreedModule } from './modules/breeds/breeds.module';
-import { AnimalTypeModule } from './modules/animal-types/animal-types.module';
-import { CustomerModule } from './modules/customer/customer.module';
-import { AdminModule } from './modules/admin/admin.module';
-import { APP_GUARD } from '@nestjs/core';
-import { RolesGuard } from './common/guards/roles.guard';
-import { JwtAuthGuard } from './modules/auth/guard/jwt-auth.guard';
-import { RefreshJwtAuthGuard } from './modules/auth/guard/refresh-auth.guard';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -46,7 +43,7 @@ import { RefreshJwtAuthGuard } from './modules/auth/guard/refresh-auth.guard';
     BreedModule,
     AnimalTypeModule,
     CustomerModule,
-    AdminModule
+    ReportModule
   ],
 })
 export class AppModule { }

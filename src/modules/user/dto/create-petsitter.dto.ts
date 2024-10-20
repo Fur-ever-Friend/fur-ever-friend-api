@@ -1,5 +1,5 @@
 import { Role } from "@prisma/client";
-import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsPhoneNumber, MaxLength, MinLength } from "class-validator";
 
 export class CreatePetsitterDto {
     @IsEmail({}, { message: "Invalid email" })
