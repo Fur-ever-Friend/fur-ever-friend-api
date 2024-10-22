@@ -22,7 +22,9 @@ export class AuthController {
       message: 'Register Successful',
       data: {
         user,
-        token
+        token: {
+          accessToken: token.accessToken,
+        }
       }
     });
   }
@@ -31,7 +33,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request, @Res() res: Response) {
-    const { id: userId, role, ...rest } = req.user as Omit<User, 'password'>
+    const { id: userId, role, ...rest } = req.user as Partial<User>;
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
     res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
@@ -43,7 +45,6 @@ export class AuthController {
           ...rest,
           id: userId,
           role,
-          refreshToken,
         },
         token: {
           accessToken,

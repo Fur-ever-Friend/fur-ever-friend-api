@@ -11,7 +11,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         super({ usernameField: 'email' });
     }
 
-    async validate(email: string, password: string): Promise<Omit<User, 'password'>> {
+    async validate(email: string, password: string): Promise<Partial<User>> {
         if (typeof email !== 'string' || !email.includes('@')) {
             throw new UnauthorizedException('Invalid email format');
         }

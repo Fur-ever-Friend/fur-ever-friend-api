@@ -14,11 +14,12 @@ export class AuthService {
         private readonly userService: UserService,
     ) { }
 
-    async validateLogin(email: string, pass: string): Promise<Omit<User, 'password'>> {
+    async validateLogin(email: string, pass: string): Promise<Partial<User>> {
         try {
             const user = await this.userService.getUserByEmail(email);
             if (await validatePassword(pass, user.password)) {
                 const { password, ...result } = user;
+                console.log("[DEBUG] User", result);
                 return result;
             }
             throw new BadRequestException("Invalid email or password");
@@ -33,9 +34,9 @@ export class AuthService {
         }
     }
 
-    async validateUser(payload: { sub: string, role: Role }): Promise<Omit<User, 'password'>> {
+    async validateUser(payload: { sub: string, role: Role }): Promise<Partial<User>> {
         try {
-            const user = await this.userService.getUserById(payload.sub);
+            const user = await this.userService.getUserByIdWithDetails(payload.sub);
             if (user.role !== payload.role) throw new ForbiddenException();
             const { password, ...result } = user;
             return result;
@@ -54,7 +55,6 @@ export class AuthService {
             const user = await this.userService.createUser(createUserDto);
             const tokens = await this.getTokens(user.id, user.role);
             await this.userService.updateRefreshToken(user.id, tokens.refreshToken);
-            user.refreshToken = tokens.refreshToken;
             return {
                 user,
                 token: tokens

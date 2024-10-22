@@ -27,8 +27,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { SetUserStatusDto } from './dto/set-user-status.dto';
 import { diskStorage } from 'multer';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { extname } from 'path';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -96,12 +95,9 @@ export class UserController {
         @Body('json') json: string,
         @UploadedFiles() files: { avatar?: Express.Multer.File[], coverImage?: Express.Multer.File[] },
     ) {
-        console.log('files', files);
         try {
             if (!json) throw new BadRequestException('No JSON data provided');
-            console.log('json', json);
             const jsonParse = JSON.parse(json);
-            console.log('jsonParse', jsonParse);
             const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
             if (!validateData.success) throw new BadRequestException('Invalid Field');
 
@@ -191,7 +187,6 @@ export class UserController {
             else throw new BadRequestException("Invalid Field");
         }
     }
-
 
     @UseGuards(JwtAuthGuard)
     @Get(":userId") // GET /users/:userId  - Get user by id

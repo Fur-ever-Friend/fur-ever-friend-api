@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { CreateReportDto } from './dto/create-report.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { UserService } from '../user/user.service';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Injectable()
 export class ReportService {
@@ -26,11 +29,11 @@ export class ReportService {
       } as any,
     });
 
-    console.log('report', report);
-
     return report;
   }
 
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   findAll() {
     return this.prismaService.report.findMany({
       include: {

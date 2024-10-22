@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AccountState, Prisma, State, User } from '@prisma/client';
+import { AccountState, Prisma, Role, State, User } from '@prisma/client';
 import { hashPassword } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto } from './dto/create-petsitter.dto';
@@ -24,10 +24,14 @@ export class UserService {
                 sortOrder = SortOrder.ASC,
                 sortBy = SortBy.ID,
                 page = 1,
-                limit = 5,
+                limit = 10,
             } = query;
 
-            const where = {}
+            const where = {
+                role: {
+                    not: Role.ADMIN,
+                },
+            }
             if (search && searchType) {
                 switch (searchType) {
                     case SearchType.ID:
@@ -89,12 +93,25 @@ export class UserService {
                 orderBy,
                 skip,
                 take,
-                include: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    role: true,
+                    avatar: true,
+                    accountStatus: true,
+                    createdAt: true,
                     customer: {
-                        include: {
-                            pets: true
-                        },
-                    }, petsitter: true, admin: true
+                        select: {
+                            id: true,
+                        }
+                    },
+                    petsitter: {
+                        select: {
+                            id: true,
+                        }
+                    },
                 }
             });
 
@@ -112,8 +129,32 @@ export class UserService {
         }
     }
 
-    async getUsers(): Promise<User[]> {
-        return this.prismaService.user.findMany({
+    async getUserByIdWithoutCredential(userId: string) {
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                id: userId,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                phone: true,
+                role: true,
+                avatar: true,
+                createdAt: true,
+                accountStatus: true,
+            },
+        });
+        if (user.accountStatus !== AccountState.ACTIVE) throw new NotFoundException('User not found');
+        return user;
+    }
+
+    async getUserById(userId: string): Promise<User> {
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                id: userId
+            },
             include: {
                 customer: {
                     include: {
@@ -122,51 +163,8 @@ export class UserService {
                 }, petsitter: true, admin: true
             },
         });
-    }
-
-    async getUserByIdWithoutCredential(userId: string): Promise<Omit<User, 'password' | 'refreshToken' | 'accountStatus'>> {
-        try {
-            const user = await this.prismaService.user.findUnique({
-                where: {
-                    id: userId,
-                    accountStatus: 'ACTIVE'
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    phone: true,
-                    role: true,
-                    avatar: true,
-                },
-            });
-            if (!user) throw new NotFoundException('User not found');
-            return user;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async getUserById(userId: string): Promise<User> {
-        try {
-            const user = await this.prismaService.user.findUnique({
-                where: {
-                    id: userId
-                },
-                include: {
-                    customer: {
-                        include: {
-                            pets: true
-                        },
-                    }, petsitter: true, admin: true
-                },
-            });
-            if (!user) throw new NotFoundException('User not found');
-            return user;
-        } catch (error) {
-            throw error;
-        }
+        if (!user) throw new NotFoundException('User not found');
+        return user;
     }
 
     async getRefreshToken(userId: string): Promise<string | null> {
@@ -184,42 +182,105 @@ export class UserService {
         return user.refreshToken;
     }
 
-    async getUserByIdWithDetails(userId: string): Promise<User> {
+    async getUserByIdWithDetails(userId: string): Promise<Partial<User>> {
         try {
             const user = await this.prismaService.user.findUnique({
                 where: {
-                    id: userId
+                    id: userId,
                 },
-                include: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    avatar: true,
+                    phone: true,
+                    role: true,
+                    accountStatus: true,
+                    createdAt: true,
                     customer: {
                         include: {
-                            pets: true
+                            pets: true,
+                            activities: true,
+
                         },
-                    }, petsitter: true, admin: true
+                    },
+                    petsitter: {
+                        select: {
+                            id: true,
+                            certificateUrl: true,
+                            about: true,
+                            experience: true,
+                            quote: true,
+                            rating: true,
+                            location: true,
+                            serviceTags: true,
+                            coverImages: true,
+                            requests: true,
+                            activities: true,
+                        }
+                    }
                 },
             });
+
             if (!user) throw new NotFoundException('User not found');
+
+            switch (user.role) {
+                case Role.CUSTOMER:
+                    delete user.petsitter;
+                    break;
+                case Role.PETSITTER:
+                    delete user.customer;
+                    break;
+            }
+
             return user;
         } catch (error) {
             throw error;
         }
     }
 
-    async getUserByEmail(email: string): Promise<User> {
+
+    async getUserByEmail(email: string): Promise<Partial<User>> {
         try {
             const user = await this.prismaService.user.findUnique({
                 where: {
                     email
                 },
-                include: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    password: true,
+                    phone: true,
+                    role: true,
+                    avatar: true,
+                    createdAt: true,
+                    accountStatus: true,
                     customer: {
-                        include: {
-                            pets: true
-                        },
-                    }, petsitter: true, admin: true
-                },
+                        select: {
+                            id: true,
+                        }
+                    },
+                    petsitter: {
+                        select: {
+                            id: true,
+                        }
+                    },
+                }
             });
             if (!user) throw new NotFoundException('User not found');
+
+            switch (user.role) {
+                case Role.CUSTOMER:
+                    delete user.petsitter;
+                    break;
+                case Role.PETSITTER:
+                    delete user.customer;
+                    break;
+            }
+
             return user;
         } catch (err) {
             if (err instanceof HttpException) {
@@ -232,7 +293,7 @@ export class UserService {
         }
     }
 
-    async createUser({ password, role, ...rest }: CreateUserDto): Promise<User> {
+    async createUser({ password, role, ...rest }: CreateUserDto): Promise<Partial<User>> {
         try {
             if (!['CUSTOMER', 'ADMIN'].includes(role)) throw new BadRequestException("Invalid role");
             const hashedPassword = await hashPassword(password);
@@ -257,9 +318,16 @@ export class UserService {
                     ...rest,
                     ...roleData
                 },
-                include: {
-                    customer: role === "CUSTOMER" ? true : false,
-                    admin: role === "ADMIN" ? true : false,
+                select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    phone: true,
+                    role: true,
+                    avatar: true,
+                    createdAt: true,
+                    accountStatus: true,
                 }
             });
 
@@ -277,39 +345,53 @@ export class UserService {
         }
     }
 
-    async createPetsitter(email: string): Promise<User> {
+    async createPetsitter(email: string) {
         const { id, state, certificateUrl, createdAt, ...rest } = await this.qualificationService.getQualification(email);
-        console.log(`[DEBUG] Qualification: ${id} ${state} ${certificateUrl}`);
         if (state !== State.PENDING) throw new BadRequestException('Qualification is not pending');
+
         const createPetsitter = {
             ...rest,
             role: "PETSITTER"
         } satisfies CreatePetsitterDto;
-        console.log(`[DEBUG] CreatePetsitter: ${JSON.stringify(createPetsitter)}`);
-        try {
-            const user = await this.prismaService.user.create({
-                data: {
-                    ...createPetsitter,
-                    petsitter: {
-                        create: {
-                            certificateUrl
-                        }
-                    }
-                },
-                include: {
-                    petsitter: true,
-                }
-            })
 
-            await this.qualificationService.updateQualification(id, State.ACCEPTED);
+        try {
+            const user = await this.prismaService.$transaction(async (prisma) => {
+                const user = await prisma.user.create({
+                    data: {
+                        ...createPetsitter,
+                        petsitter: {
+                            create: {
+                                certificateUrl
+                            }
+                        }
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                        firstname: true,
+                        lastname: true,
+                        phone: true,
+                        role: true,
+                        avatar: true,
+                        createdAt: true,
+                        accountStatus: true,
+                    }
+                });
+
+                await this.qualificationService.updateQualification(id, State.ACCEPTED);
+                return user;
+            });
 
             return user;
         } catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                throw new BadRequestException('Email already exists');
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2002') {
+                    throw new BadRequestException('Email already exists');
+                }
             }
-            console.log("[ERROR]", error);
-            throw error;
+
+            console.error("[ERROR]", error);
+            throw new InternalServerErrorException('An unexpected error occurred');
         }
     }
 
@@ -336,7 +418,7 @@ export class UserService {
                     id: userId
                 },
                 data: {
-                    ...otherField,
+                    ...rest,
                     password: hashedPassword ? hashedPassword : undefined,
                     petsitter: petsitterData ? {
                         update: {
@@ -355,7 +437,7 @@ export class UserService {
                 throw new BadRequestException('Email already exists');
             }
             console.log("[ERROR]", error);
-            throw error;
+            throw new InternalServerErrorException('An unexpected error occurred');
         }
     }
 
@@ -404,15 +486,17 @@ export class UserService {
         }
     }
 
-    async updateRefreshToken(userId: string, refreshToken: string | null) {
-        return this.prismaService.user.update({
+    async updateRefreshToken(userId: string, refreshToken: string | null): Promise<void> {
+        await this.prismaService.user.update({
             where: {
                 id: userId
             },
             data: {
                 refreshToken
             }
+
         });
+
     }
 
     // set user status (ADMIN) /
