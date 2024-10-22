@@ -100,8 +100,8 @@ model Activity {
   customer   Customer @relation(fields: [customerId], references: [id])
   customerId String   @map("customer_id")
 
-  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
-  petsitterId String    @map("petsitter_id")
+  petsitter   Petsitter? @relation(fields: [petsitterId], references: [id])
+  petsitterId String?    @map("petsitter_id")
 
   requests PetsitterRequest[]
 
