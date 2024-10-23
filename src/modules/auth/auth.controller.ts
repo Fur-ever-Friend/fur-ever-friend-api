@@ -33,7 +33,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request, @Res() res: Response) {
-    const { id: userId, role, ...otherFields } = req.user as Partial<User>;
+    const { id: userId, role, createdAt, ...otherFields } = req.user as Partial<User>;
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
     res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
@@ -79,7 +79,7 @@ export class AuthController {
     const token = await this.authService.refreshTokens(user.id, refreshToken);
     res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 });
     res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 });
-    const { password, refreshToken: rt, ...otherFields } = user;
+    const { password, refreshToken: rt, createdAt, ...otherFields } = user;
     return res.json({
       statusCode: HttpStatus.OK,
       message: "Token refreshed successfully.",
