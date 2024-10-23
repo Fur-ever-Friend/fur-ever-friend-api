@@ -29,3 +29,13 @@ export const UpdateUserDtoSchema = z.object({
 });
 
 export type UpdateUserDto = z.infer<typeof UpdateUserDtoSchema>;
+
+export const UpdateCustomerSchema = z.object({
+    password: z.string().min(6).optional(),
+    firstname: z.string().min(2).max(30).optional(),
+    lastname: z.string().min(2).max(30).optional(),
+    phone: z.string().regex(/^0\d{9}$/).optional(),
+    avatar: z.string().optional(),
+});
+
+export type UpdateCustomerDto = z.infer<typeof UpdateCustomerSchema>;
