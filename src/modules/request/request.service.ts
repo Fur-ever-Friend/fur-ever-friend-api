@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateRequestDto } from './dto/create-request.dto';
+import { CreateRequestDto } from './dto/request/create-request.dto';
+import { convertToUtc } from '@/common/utils';
+import { GetRequestResponseDto } from './dto';
 
 @Injectable()
 export class RequestService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createRequest(userId: string, createRequestDto: CreateRequestDto) {
-    const { activityId } = createRequestDto;
+    const { activityId, price } = createRequestDto;
 
     const activity = await this.prismaService.activity.findUnique({
       where: { id: activityId },
@@ -22,7 +24,11 @@ export class RequestService {
     });
 
     if (!petsitter) {
-      throw new BadRequestException('Only petsitters can request to activities');
+      throw new NotFoundException('Petsitter not found');
+    }
+
+    if (price < 20 || price > 500) {
+      throw new BadRequestException('The service price must be between $20 and $500.');
     }
 
     const existingRequest = await this.prismaService.petsitterRequest.findFirst({
@@ -31,6 +37,23 @@ export class RequestService {
 
     if (existingRequest) {
       throw new BadRequestException('You have already requested to this activity');
+    }
+
+    const startDateTimeUtc = convertToUtc(activity.startDateTime);
+    const endDateTimeUtc = convertToUtc(activity.endDateTime);
+
+    const overlappingActivity = await this.prismaService.activity.findFirst({
+      where: {
+        petsitterId: petsitter.id,
+        startDateTime: { lte: endDateTimeUtc },
+        endDateTime: { gte: startDateTimeUtc },
+      },
+    });
+
+    if (overlappingActivity) {
+      throw new BadRequestException(
+        'The requested activity time overlaps with another activity assigned to this petsitter.',
+      );
     }
 
     return this.prismaService.petsitterRequest.create({
@@ -43,7 +66,7 @@ export class RequestService {
     });
   }
 
-  async getRequestsByPetsitter(userId: string) {
+  async getRequestsByPetsitter(userId: string): Promise<GetRequestResponseDto[]> {
     const petsitter = await this.prismaService.petsitter.findUnique({
       where: { userId },
     });
@@ -52,17 +75,21 @@ export class RequestService {
       throw new NotFoundException('Petsitter not found');
     }
 
-    return this.prismaService.petsitterRequest.findMany({
+    const requests = await this.prismaService.petsitterRequest.findMany({
       where: { petsitterId: petsitter.id },
       include: { activity: true },
     });
+
+    return requests.map(GetRequestResponseDto.formatRequestResponse);
   }
 
-  async getRequestsByActivity(activityId: string) {
-    return this.prismaService.petsitterRequest.findMany({
+  async getRequestsByActivity(activityId: string): Promise<GetRequestResponseDto[]> {
+    const requests = await this.prismaService.petsitterRequest.findMany({
       where: { activityId },
-      include: { petsitter: { include: { user: true } } },
+      include: { activity: true, petsitter: { include: { user: true } } },
     });
+
+    return requests.map(GetRequestResponseDto.formatRequestResponse);
   }
 
   async acceptRequest(userId: string, requestId: string) {
@@ -100,6 +127,7 @@ export class RequestService {
       data: {
         petsitterId: request.petsitterId,
         state: 'ASSIGNED',
+        price: request.price,
       },
     });
 

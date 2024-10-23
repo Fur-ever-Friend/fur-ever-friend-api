@@ -1,24 +1,43 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateActivityDto } from './dto';
+import { ActivityResponseDto } from './dto/response/activity-response.dto';
+import { validateAndConvertDateTimes } from '@/common/utils';
+import { ActivityState } from '@prisma/client';
 
 @Injectable()
 export class ActivityService {
   private readonly logger = new Logger(ActivityService.name);
   constructor(private readonly prismaService: PrismaService) {}
 
-  async getActivities() {
-    return await this.prismaService.activity.findMany();
+  async getActivities(): Promise<ActivityResponseDto[]> {
+    const activities = await this.prismaService.activity.findMany({
+      select: ActivityResponseDto.selectFields(),
+    });
+    return activities.map(ActivityResponseDto.formatActivityResponse);
   }
 
-  async getActivityById(id: string) {
-    const activity = this.prismaService.activity.findUnique({
+  async getYourActivities(userId: string): Promise<ActivityResponseDto[]> {
+    const customer = await this.prismaService.customer.findUnique({
+      where: { userId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer not found`);
+    }
+
+    const activities = await this.prismaService.activity.findMany({
+      where: {
+        customerId: customer.id,
+      },
+      select: ActivityResponseDto.selectFields(),
+    });
+
+    return activities.map(ActivityResponseDto.formatActivityResponse);
+  }
+
+  async getActivityById(id: string): Promise<ActivityResponseDto> {
+    const activity = await this.prismaService.activity.findUnique({
       where: {
         id,
       },
@@ -47,13 +66,19 @@ export class ActivityService {
       throw new NotFoundException(`Pet not found or does not belong to the user`);
     }
 
+    // Validate and convert date times
+    const { startDateTimeUtc, endDateTimeUtc } = validateAndConvertDateTimes(
+      data.startDateTime,
+      data.endDateTime,
+    );
+
     const overlappingActivities = await this.prismaService.activity.findMany({
       where: {
         petId: data.petId,
         OR: [
           {
-            startDateTime: { lte: data.endDateTime },
-            endDateTime: { gte: data.startDateTime },
+            startDateTime: { lte: startDateTimeUtc },
+            endDateTime: { gte: endDateTimeUtc },
           },
         ],
       },
@@ -61,11 +86,12 @@ export class ActivityService {
 
     if (overlappingActivities.length > 0) {
       throw new BadRequestException(
-        'The pet is already booked for another activity during the selected time',
+        'Some pets are in another activity with overlapping durations.',
       );
     }
 
-    const activity = await this.prismaService.activity.create({
+    try {
+      const activity = await this.prismaService.activity.create({
       data: {
         name: data.name,
         detail: data.detail,
@@ -73,19 +99,19 @@ export class ActivityService {
         endDateTime: data.endDateTime,
         pickupPoint: data.pickupPoint,
         customer: {
-          connect: { id: customer.id },
+        connect: { id: customer.id },
         },
         pet: {
-          connect: { id: data.petId },
+        connect: { id: data.petId },
         },
         services: {
-          create: data.services.map(service => ({
-            detail: service.detail,
-            serviceType: service.serviceType,
-            pet: {
-              connect: { id: data.petId },
-            },
-          })),
+        create: data.services.map(service => ({
+          detail: service.detail,
+          serviceType: service.serviceType,
+          pet: {
+          connect: { id: data.petId },
+          },
+        })),
         },
       },
       include: {
@@ -93,8 +119,12 @@ export class ActivityService {
         pet: true,
         services: true,
       },
-    });
+      });
+      return activity;
+    } catch (error) {
+      this.logger.error('Error creating activity', error.stack);
+      throw new BadRequestException('Failed to create activity');
+    }
 
-    return activity;
   }
 }

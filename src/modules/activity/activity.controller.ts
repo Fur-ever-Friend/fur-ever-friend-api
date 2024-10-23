@@ -1,37 +1,56 @@
 import { Body, Controller, Get, Logger, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiTags,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { ActivityService } from './activity.service';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { ActivityResponseDto } from './dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { CreateActivityDto } from './dto/create-activity.dto';
+import { CreateActivityDto } from './dto/request/create-activity.dto';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
+import { Roles } from '@/common/decorators/roles.decorator';
 
 @ApiTags('activities')
 @ApiBearerAuth()
 @Controller('activities')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ActivityController {
   private readonly logger = new Logger(ActivityController.name);
   constructor(private readonly activityService: ActivityService) {}
 
   @ApiOperation({ summary: 'Get all activities' })
-  @ApiResponse({ status: 200 })
+  @ApiOkResponse({ status: 200 })
   @Get()
-  async getAllActivities() {
+  async getAllActivities(): Promise<ActivityResponseDto[]> {
     return this.activityService.getActivities();
   }
 
+  @ApiOperation({ summary: 'Get your activities' })
+  @ApiOkResponse({ status: 200 })
+  @Get('me')
+  @Roles(Role.CUSTOMER)
+  async getYourActivities(@CurrentUser() user: User): Promise<ActivityResponseDto[]> {
+    return this.activityService.getYourActivities(user.id);
+  }
+
   @ApiOperation({ summary: 'Get activities by id' })
+  @ApiOkResponse({ status: 200 })
   @Get(':id')
-  async getActivityById(@Param('id') id: string) {
+  async getActivityById(@Param('id') id: string): Promise<ActivityResponseDto> {
     return this.activityService.getActivityById(id);
   }
 
   @ApiBody({ type: CreateActivityDto })
   @ApiOperation({ summary: 'Create activity' })
-  @ApiResponse({ status: 201 })
+  @ApiOkResponse({ status: 201 })
   @Post()
+  @Roles(Role.CUSTOMER)
   async createActivity(@CurrentUser() user: User, @Body() data: CreateActivityDto) {
     return this.activityService.createActivity(data, user.id);
   }
