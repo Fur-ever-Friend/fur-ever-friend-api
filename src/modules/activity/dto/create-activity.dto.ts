@@ -1,6 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ServiceType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsString, IsDate, IsNumber, IsNotEmpty } from 'class-validator';
+import { IsString, IsDate, IsNotEmpty, IsUUID, IsArray, ValidateNested, IsEnum } from 'class-validator';
+
+class CreateActivityServiceDto {
+  @ApiProperty({
+    example: 'Detailed grooming service',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  detail: string;
+
+  @ApiProperty({
+    example: 'PET_GROOMING',
+    required: true,
+  })
+  @IsEnum(ServiceType)
+  @IsNotEmpty()
+  serviceType: ServiceType;
+
+  petId: string;
+}
 
 export class CreateActivityDto {
   @ApiProperty({
@@ -45,11 +66,21 @@ export class CreateActivityDto {
   @IsNotEmpty()
   pickupPoint: string;
 
+
   @ApiProperty({
-    example: 14,
+    example: '123e4567-e89b-12d3-a456-426614174000',
     required: true,
   })
-  @IsNumber()
+  @IsUUID()
   @IsNotEmpty()
-  price: number;
+  petId: string;
+
+  @ApiProperty({
+    type: [CreateActivityServiceDto],
+    required: true,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateActivityServiceDto)
+  services: CreateActivityServiceDto[];
 }

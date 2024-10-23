@@ -95,7 +95,7 @@ model Activity {
   endDateTime   DateTime      @map("end_date_time")
   pickupPoint   String        @map("pickup_point")
   state         ActivityState @default(PENDING)
-  price         Float
+  price         Float?
 
   customer   Customer @relation(fields: [customerId], references: [id])
   customerId String   @map("customer_id")
@@ -103,6 +103,9 @@ model Activity {
   petsitter   Petsitter? @relation(fields: [petsitterId], references: [id])
   petsitterId String?    @map("petsitter_id")
 
+  pet          Pet       @relation(fields: [petId], references: [id])
+  petId        String
+  
   requests PetsitterRequest[]
 
   progresses ActivityProgress[]
@@ -189,6 +192,7 @@ model Pet {
   services ActivityService[]
 
   @@map("pets")
+  Activity Activity[]
 }
 
 model AnimalType {
@@ -217,7 +221,7 @@ model PetsitterRequest {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
   state     State    @default(PENDING)
-  price     Float
+  price     Float?
   message   String?
 
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)

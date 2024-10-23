@@ -7,41 +7,32 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 
 import { User } from '@prisma/client';
 
-
 @ApiTags('activities')
+@ApiBearerAuth()
 @Controller('activities')
+@UseGuards(JwtAuthGuard)
 export class ActivityController {
   private readonly logger = new Logger(ActivityController.name);
   constructor(private readonly activityService: ActivityService) {}
 
-  @Get()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all activities' })
-  @ApiResponse({ status: 200, description: 'List of all activities' })
+  @ApiResponse({ status: 200 })
+  @Get()
   async getAllActivities() {
     return this.activityService.getActivities();
   }
 
+  @ApiOperation({ summary: 'Get activities by id' })
   @Get(':id')
   async getActivityById(@Param('id') id: string) {
     return this.activityService.getActivityById(id);
   }
 
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create activity' })
   @ApiBody({ type: CreateActivityDto })
-  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create activity' })
+  @ApiResponse({ status: 201 })
   @Post()
-  async createActivity(
-    @CurrentUser() user: User,
-    @Body() data: CreateActivityDto,
-  ) {
-    console.log(user);
-    return this.activityService.createActivity({
-      data,
-      userId: user.id,
-    });
+  async createActivity(@CurrentUser() user: User, @Body() data: CreateActivityDto) {
+    return this.activityService.createActivity(data, user.id);
   }
 }

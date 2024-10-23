@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateActivityDto } from './dto';
 
@@ -8,53 +14,87 @@ export class ActivityService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async getActivities() {
-    try {
-      this.logger.log('Fetching all activities');
-      return await this.prismaService.activity.findMany();
-    } catch (error) {
-      this.logger.error('Failed to fetch activities', error.stack);
-      throw new InternalServerErrorException('Failed to fetch activities');
-    }
+    return await this.prismaService.activity.findMany();
   }
 
   async getActivityById(id: string) {
-    return this.prismaService.activity.findUnique({
+    const activity = this.prismaService.activity.findUnique({
       where: {
         id,
       },
     });
+
+    if (!activity) {
+      throw new NotFoundException(`Activity not found`);
+    }
+    return activity;
   }
 
-  async createActivity({ data, userId }: {
-    data: CreateActivityDto, userId: string
-  }) {
-    try {
-      this.logger.log('Creating activity with data:', data);
+  async createActivity(data: CreateActivityDto, userId: string) {
+    const customer = await this.prismaService.customer.findUnique({
+      where: { userId },
+    });
 
-      // Fetch the customer record associated with the user
-      const customer = await this.prismaService.customer.findUnique({
-        where: { userId },
-      });
-
-      if (!customer) {
-        throw new NotFoundException(`Customer with userId ${userId} not found`);
-      }
-
-      const activity = await this.prismaService.activity.create({
-        data: {
-          ...data,
-          customer: {
-            connect: { id: customer.id },
-          },
-        },
-      });
-
-      this.logger.log('Activity created successfully:', activity);
-
-      return activity;
-    } catch (error) {
-      this.logger.error('Failed to create activity', error.stack);
-      throw new InternalServerErrorException('Failed to create activity');
+    if (!customer) {
+      throw new NotFoundException(`Customer not found`);
     }
+
+    const pet = await this.prismaService.pet.findUnique({
+      where: { id: data.petId },
+    });
+
+    if (!pet || pet.ownerId !== customer.id) {
+      throw new NotFoundException(`Pet not found or does not belong to the user`);
+    }
+
+    const overlappingActivities = await this.prismaService.activity.findMany({
+      where: {
+        petId: data.petId,
+        OR: [
+          {
+            startDateTime: { lte: data.endDateTime },
+            endDateTime: { gte: data.startDateTime },
+          },
+        ],
+      },
+    });
+
+    if (overlappingActivities.length > 0) {
+      throw new BadRequestException(
+        'The pet is already booked for another activity during the selected time',
+      );
+    }
+
+    const activity = await this.prismaService.activity.create({
+      data: {
+        name: data.name,
+        detail: data.detail,
+        startDateTime: data.startDateTime,
+        endDateTime: data.endDateTime,
+        pickupPoint: data.pickupPoint,
+        customer: {
+          connect: { id: customer.id },
+        },
+        pet: {
+          connect: { id: data.petId },
+        },
+        services: {
+          create: data.services.map(service => ({
+            detail: service.detail,
+            serviceType: service.serviceType,
+            pet: {
+              connect: { id: data.petId },
+            },
+          })),
+        },
+      },
+      include: {
+        customer: true,
+        pet: true,
+        services: true,
+      },
+    });
+
+    return activity;
   }
 }
