@@ -1,7 +1,7 @@
-import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
-import { validatePassword, verify } from 'src/common/utils';
+import { validatePassword } from 'src/common/utils';
 import { Role, User } from '@prisma/client';
 import { JwtPayload } from './dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -19,18 +19,19 @@ export class AuthService {
             const user = await this.userService.getUserByEmail(email);
             if (await validatePassword(pass, user.password)) {
                 const { password, ...result } = user;
-                console.log("[DEBUG] User", result);
                 return result;
             }
             throw new BadRequestException("Invalid email or password");
-        } catch (error) {
-            if (error instanceof HttpException) {
-                console.log(`[HttpException] Code: ${error.getStatus()} Message: ${error.message}`);
-                throw error;
+        } catch (err: unknown) {
+            if (err instanceof HttpException) {
+                console.log(`[${err.name}] Code: ${err.getStatus()} Message: ${err.message}`);
+                throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
             } else {
-                console.log("[ERROR]", error);
-                throw new InternalServerErrorException()
+                console.log("[ERROR]", err);
             }
+            throw err;
         }
     }
 
@@ -40,27 +41,38 @@ export class AuthService {
             if (user.role !== payload.role) throw new ForbiddenException();
             const { password, ...result } = user;
             return result;
-        } catch (err) {
+        } catch (err: unknown) {
             if (err instanceof HttpException) {
+                console.log(`[${err.name}] Code: ${err.getStatus()} Message: ${err.message}`);
                 throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
             } else {
                 console.log("[ERROR]", err);
-                throw new HttpException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
             }
+            throw new BadRequestException();
         }
     }
 
     async register(createUserDto: CreateUserDto): Promise<AuthResponseDto> {
         try {
             const user = await this.userService.createUser(createUserDto);
-            const tokens = await this.getTokens(user.id, user.role);
-            await this.userService.updateRefreshToken(user.id, tokens.refreshToken);
+            const token = await this.getTokens(user.id, user.role);
+            await this.userService.updateRefreshToken(user.id, token.refreshToken);
             return {
                 user,
-                token: tokens
+                token
             }
-        } catch (err) {
-            throw err
+        } catch (err: unknown) {
+            if (err instanceof HttpException) {
+                console.log(`[${err.name}] Code: ${err.getStatus()} Message: ${err.message}`);
+                throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
+            } else {
+                console.log("[ERROR]", err);
+            }
+            throw new BadRequestException();
         }
     }
 
@@ -69,13 +81,15 @@ export class AuthService {
             const tokens = await this.getTokens(userId, role);
             await this.userService.updateRefreshToken(userId, tokens.refreshToken);
             return tokens;
-        } catch (err) {
+        } catch (err: unknown) {
             if (err instanceof HttpException) {
                 throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
             } else {
                 console.log("[ERROR]", err);
-                throw new HttpException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
             }
+            throw new BadRequestException();
         }
     }
 
@@ -83,57 +97,67 @@ export class AuthService {
         try {
             await this.userService.getUserById(userId);
             await this.userService.updateRefreshToken(userId, null);
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
+        } catch (err: unknown) {
+            if (err instanceof HttpException) {
+                throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
             } else {
-                console.log("[ERROR]", error);
-                throw new HttpException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
+                console.log("[ERROR]", err);
             }
+            throw new ForbiddenException();
         }
     }
 
     async refreshTokens(userId: string, refreshToken: string) {
         try {
-            const user = await this.userService.getUserById(userId);
+            const user = await this.userService.getUserByIdWithDetails(userId);
             if (!user || !user.refreshToken) throw new ForbiddenException('Access Denied');
             if (refreshToken !== user.refreshToken) throw new ForbiddenException('Access Denied');
-            // const refreshTokenMatches = await verify(refreshToken, user.refreshToken);
-            // console.log(`[DEBUG] Refresh Token Matches: ${refreshTokenMatches}`);
-            // if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
             const tokens = await this.getTokens(user.id, user.role);
             await this.userService.updateRefreshToken(user.id, tokens.refreshToken);
             return tokens;
-        } catch (err) {
+        } catch (err: unknown) {
             if (err instanceof HttpException) {
                 throw err;
+            } else if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
             } else {
                 console.log("[ERROR]", err);
-                throw new HttpException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
             }
+            throw new ForbiddenException();
         }
     }
 
     async getTokens(userId: string, role: Role) {
-        const nbf = Math.floor(Date.now() / 1000) + 30;
-        const payload: JwtPayload = { sub: userId, role };
-        const payloadWithNbf = { ...payload, nbf };
-        const [accessToken, refreshToken] = await Promise.all([
-            this.jwtService.signAsync(payload, {
-                secret: process.env.ACCESS_TOKEN_SECRET,
-                expiresIn: process.env.ACCESS_EXPIRES_IN,
-            },
-            ),
-            this.jwtService.signAsync(payloadWithNbf, {
-                secret: process.env.REFRESH_TOKEN_SECRET,
-                expiresIn: process.env.REFRESH_EXPIRES_IN,
-            },
-            ),
-        ]);
+        try {
+            const nbf = Math.floor(Date.now() / 1000) + 30;
+            const payload: JwtPayload = { sub: userId, role };
+            const payloadWithNbf = { ...payload, nbf };
+            const [accessToken, refreshToken] = await Promise.all([
+                this.jwtService.signAsync(payload, {
+                    secret: process.env.ACCESS_TOKEN_SECRET,
+                    expiresIn: process.env.ACCESS_EXPIRES_IN,
+                },
+                ),
+                this.jwtService.signAsync(payloadWithNbf, {
+                    secret: process.env.REFRESH_TOKEN_SECRET,
+                    expiresIn: process.env.REFRESH_EXPIRES_IN,
+                },
+                ),
+            ]);
 
-        return {
-            accessToken,
-            refreshToken,
+            return {
+                accessToken,
+                refreshToken,
+            }
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                console.log(`[${err.name}] ${err.message}`);
+            } else {
+                console.log("[ERROR]", err);
+            }
+            throw new InternalServerErrorException();
         }
     }
 }

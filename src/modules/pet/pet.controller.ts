@@ -4,6 +4,7 @@ import {
     Controller,
     Delete,
     Get,
+    HttpException,
     HttpStatus,
     Param,
     Patch,
@@ -24,6 +25,7 @@ import { Role, User } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { handleError } from 'src/common/utils';
 
 @Controller('pets')
 export class PetController {
@@ -62,33 +64,56 @@ export class PetController {
         @UploadedFile() file: Express.Multer.File
     ) {
         try {
-            console.log("id", user["customer"]["id"]);
             const jsonParse = JSON.parse(json);
             const validateData = CreatePetSchema.safeParse(jsonParse);
             if (!validateData.success) throw new BadRequestException("Invalid Field");
             const data = validateData.data satisfies CreatePetDto;
             data.imageUrl = file.filename;
-            return this.petService.createPet(data, user["customer"]["id"]);
-        } catch (error) {
-            throw new BadRequestException("Invalid JSON");
+            const result = await this.petService.createPet(data, user["customer"]["id"]);
+            return {
+                statusCode: HttpStatus.CREATED,
+                message: "Pet created successfully.",
+                data: result,
+            }
+        } catch (err: unknown) {
+            handleError(err, "createPet");
         }
     }
 
+    @Roles(Role.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Get()
-    getAllPet() {
-        return this.petService.getPets();
-    }
-
-    @Get(":petId")
-    getPetById(@Param("petId") id: string) {
-        return this.petService.getPetById(id);
+    async getAllPet() {
+        const result = await this.petService.getPets();
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Pets retrieved successfully.",
+            data: result,
+        }
     }
 
     @Roles(Role.CUSTOMER)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Get("owner")
-    getPetsByOwner(@CurrentUser() user: User) {
-        return this.petService.getPetsByOwnerId(user["customer"]["id"]);
+    async getPetsByOwner(@CurrentUser() user: User) {
+        console.log(`owner id: ${user["customer"]["id"]}`);
+        const result = await this.petService.getPetsByOwnerId(user["customer"]["id"]);
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Pets retrieved successfully.",
+            data: result,
+        }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(":petId")
+    async getPetById(@Param("petId") id: string) {
+        const result = await this.petService.getPetById(id);
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Pet retrieved successfully.",
+            data: result,
+        }
     }
 
     @Roles(Role.CUSTOMER)
@@ -118,7 +143,7 @@ export class PetController {
             },
         }),
     )
-    updatePet(
+    async updatePet(
         @Param("id") id: string,
         @Body("json") json: string,
         @UploadedFile() file: Express.Multer.File
@@ -129,10 +154,14 @@ export class PetController {
             if (!validateData.success) throw new BadRequestException("Invalid Field");
             const data = validateData.data satisfies UpdatePetDto;
             if (file) data.imageUrl = file.filename;
-            return this.petService.updatePet(id, data);
-        } catch (error) {
-            if (error instanceof BadRequestException) throw error;
-            throw new BadRequestException("Invalid JSON");
+            const result = await this.petService.updatePet(id, data);
+            return {
+                statusCode: HttpStatus.OK,
+                message: "Pet updated successfully.",
+                data: result,
+            }
+        } catch (err: unknown) {
+            handleError(err, "updatePet");
         }
     }
 
@@ -141,10 +170,9 @@ export class PetController {
     @Delete(":id")
     async deletePet(@Param("id") id: string, @CurrentUser() user: User) {
         const deleted = await this.petService.deletePet(id, user["customer"]["id"]);
-        if (!deleted) throw new BadRequestException("Pet not found");
         return {
             statusCode: HttpStatus.OK,
-            message: "Pet deleted"
+            message: "Pet deleted successfully.",
         }
     }
 
@@ -155,7 +183,7 @@ export class PetController {
         await this.petService.deletePetsByOwnerId(ownerId);
         return {
             statusCode: HttpStatus.OK,
-            message: "All pets deleted"
+            message: "All pets of the owner deleted successfully.",
         }
     }
 
@@ -166,7 +194,7 @@ export class PetController {
         await this.petService.deleteAllPets();
         return {
             statusCode: HttpStatus.OK,
-            message: "All pets deleted"
+            message: "All pets deleted successfully by admin.",
         }
     }
 }

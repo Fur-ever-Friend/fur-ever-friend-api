@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { CreateReportDto } from './dto/create-report.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { UserService } from '../user/user.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -26,7 +26,33 @@ export class ReportService {
       data: {
         ...createReportDto,
         reportImages,
-      } as any,
+      } as Prisma.ReportCreateInput,
+      select: {
+        id: true,
+        type: true,
+        content: true,
+        reportImages: true,
+        reporter: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
+        reported: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
+      }
     });
 
     return report;
@@ -36,19 +62,63 @@ export class ReportService {
   @UseGuards(JwtAuthGuard, RolesGuard)
   findAll() {
     return this.prismaService.report.findMany({
-      include: {
-        reporter: true,
-        reported: true,
-      },
+      select: {
+        id: true,
+        type: true,
+        content: true,
+        reportImages: true,
+        reporter: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
+        reported: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
+      }
     });
   }
 
   findOne(id: string) {
     return this.prismaService.report.findUnique({
       where: { id },
-      include: {
-        reporter: true,
-        reported: true,
+      select: {
+        id: true,
+        type: true,
+        content: true,
+        reportImages: true,
+        reporter: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
+        reported: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            firstname: true,
+            lastname: true,
+            avatar: true,
+          }
+        },
       },
     });
   }

@@ -8,21 +8,37 @@ export class AnimalTypeController {
 
     @Get()
     async getAnimalTypes() {
-        return this.animalTypeService.getAnimalTypes();
+        const result = await this.animalTypeService.getAnimalTypes();
+        return {
+            message: "Animal types retrieved successfully.",
+            data: result
+        }
     }
 
     @Get(":animalTypeId")
     async getAnimalTypeById(@Param("animalTypeId") id: string) {
-        return this.animalTypeService.getAnimalTypeById(id);
+        const result = await this.animalTypeService.getAnimalTypeById(id);
+        return {
+            message: "Animal type retrieved successfully.",
+            data: result
+        }
     }
 
     @Post()
     async addAnimalType(@Body() { name }: AnimalTypeDto) {
-        return this.animalTypeService.addAnimalType(name);
+        const result = await this.animalTypeService.addAnimalType(name);
+        return {
+            message: "Animal type created successfully.",
+            data: result
+        }
     }
 
     @Put(":id")
     async updateAnimalType(@Param("id") id: string, @Body() { name }: AnimalTypeDto) {
-        return this.animalTypeService.updateAnimalType(id, name);
+        const result = await this.animalTypeService.updateAnimalType(id, name);
+        return {
+            message: "Animal type updated successfully.",
+            data: result
+        }
     }
 }

@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
+import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -16,7 +16,6 @@ export class ReportController {
     private readonly reportService: ReportService,
   ) { }
 
-  @HttpCode(201)
   @Post()
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -45,6 +44,7 @@ export class ReportController {
       },
     }),
   )
+  @HttpCode(201)
   async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[]) {
     try {
       const jsonParsed = JSON.parse(jsonStr);
@@ -53,12 +53,11 @@ export class ReportController {
       const response = await this.reportService.create(createReportDto, reportImages);
       return {
         statusCode: HttpStatus.CREATED,
-        message: 'Report created successfully',
+        message: "Report created successfully.",
         data: response,
       }
-    } catch (err) {
-      if (err instanceof HttpException) throw err;
-      throw new BadRequestException('Invalid JSON');
+    } catch (err: unknown) {
+      handleError(err, "ReportController.create");
     }
   }
 
@@ -69,6 +68,7 @@ export class ReportController {
     return this.reportService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.reportService.findOne(id);

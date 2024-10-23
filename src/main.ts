@@ -11,7 +11,12 @@ async function bootstrap() {
     origin: 'http://localhost:4200',
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ transform: true, stopAtFirstError: true }));
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    stopAtFirstError: true,
+    whitelist: true,
+    forbidNonWhitelisted: true
+  }));
   app.useGlobalFilters(new AllExceptionsFilter());
   app.setGlobalPrefix('api');
   await app.listen(3000);

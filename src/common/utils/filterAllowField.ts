@@ -33,18 +33,12 @@ export function allowFieldUpdate<T>(allowedFields: (keyof T)[], data: Partial<T>
     }
 
     const result: Partial<T> = {};
-    let hasValidFields = false;
 
     allowedFields.forEach((field) => {
         if (field in data) {
             result[field] = data[field];
-            hasValidFields = true;
         }
     });
-
-    if (!hasValidFields) {
-        throw new FieldUpdateError('No valid fields found to update.');
-    }
 
     return result;
 }
