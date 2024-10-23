@@ -1,14 +1,27 @@
-import { Controller, Get, Post, Body, Param, HttpCode, UseGuards, UseInterceptors, UploadedFiles, HttpStatus, BadRequestException, HttpException } from '@nestjs/common';
-import { ReportService } from './report.service';
-import { CreateReportSchema } from './dto/create-report.dto';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  HttpCode,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  HttpStatus,
+  Query
+} from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from 'uuid';
+import { Role } from '@prisma/client';
+
+import { ReportService } from './report.service';
+import { ReportQueryDto, CreateReportSchema } from './dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
 
 @Controller('reports')
 export class ReportController {
@@ -44,7 +57,7 @@ export class ReportController {
       },
     }),
   )
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[]) {
     try {
       const jsonParsed = JSON.parse(jsonStr);
@@ -64,14 +77,24 @@ export class ReportController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  findAll() {
-    return this.reportService.findAll();
+  async findAll(@Query() reportQueryDto: ReportQueryDto) {
+    const result = await this.reportService.findAll(reportQueryDto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Reports retrieved successfully.",
+      data: result,
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.reportService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const result = await this.reportService.findOne(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Report retrieved successfully.",
+      data: result,
+    }
   }
 
 }

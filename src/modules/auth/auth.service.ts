@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
-import { validatePassword } from 'src/common/utils';
+import { handleError, validatePassword } from 'src/common/utils';
 import { Role, User } from '@prisma/client';
 import { JwtPayload } from './dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -95,17 +95,9 @@ export class AuthService {
 
     async logout(userId: string): Promise<void> {
         try {
-            await this.userService.getUserById(userId);
             await this.userService.updateRefreshToken(userId, null);
         } catch (err: unknown) {
-            if (err instanceof HttpException) {
-                throw err;
-            } else if (err instanceof Error) {
-                console.log(`[${err.name}] ${err.message}`);
-            } else {
-                console.log("[ERROR]", err);
-            }
-            throw new ForbiddenException();
+            handleError(err, "logout");
         }
     }
 

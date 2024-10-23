@@ -25,8 +25,8 @@ export function handleError(err: unknown, methodName: string) {
     } else if (err instanceof ZodError) {
         // Handle Zod validation errors
         console.error(`[ZodError] ${methodName}: ${err.errors}`);
-        const messages = err.errors.map(e => e.message).join(', '); // Collect all error messages
-        throw new BadRequestException(`Validation failed: ${messages}`);
+        const messages = err.errors.map(e => e.message).join(', ');
+        throw new BadRequestException(`Validation failed: `, messages);
     } else if (err instanceof HttpException) {
         console.error(`[${err.name}] ${methodName}: ${err.message}`);
         throw err;

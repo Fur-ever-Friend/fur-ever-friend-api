@@ -17,9 +17,17 @@ export class PetService {
         private readonly customerService: CustomerService,
     ) { }
 
-    async getPets(): Promise<Pet[]> {
+    async getPets(): Promise<Partial<Pet>[]> {
         return this.prismaService.pet.findMany({
-            include: {
+            select: {
+                id: true,
+                name: true,
+                gender: true,
+                weight: true,
+                age: true,
+                imageUrl: true,
+                allergy: true,
+                personality: true,
                 breed: {
                     select: {
                         id: true,
@@ -64,7 +72,6 @@ export class PetService {
                 allergy: true,
                 personality: true,
                 otherDetail: true,
-                services: true,
                 gender: true,
                 breed: {
                     select: {
@@ -96,23 +103,46 @@ export class PetService {
         });
     }
 
-    async getPetsByOwnerId(ownerId: string): Promise<Pet[]> {
+    async getPetsByOwnerId(ownerId: string): Promise<Partial<Pet>[]> {
         return this.prismaService.pet.findMany({
             where: {
                 ownerId: ownerId
             },
-            include: {
+            select: {
+                id: true,
+                name: true,
+                gender: true,
+                weight: true,
+                age: true,
+                imageUrl: true,
+                allergy: true,
+                personality: true,
+                otherDetail: true,
+                animalType: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                },
                 breed: {
                     select: {
                         id: true,
                         name: true,
                     }
                 },
-                animalType: {
+                owner: {
                     select: {
                         id: true,
-                        name: true,
-                    },
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                firstname: true,
+                                lastname: true,
+                                avatar: true,
+                            }
+                        },
+                    }
                 },
             }
         });
@@ -184,41 +214,38 @@ export class PetService {
     }
 
     async updatePet(id: string, data: UpdatePetDto): Promise<Partial<Pet>> {
-        if (data.animalTypeId) {
-            const animalType = await this.animalTypeService.getAnimalTypeById(data.animalTypeId);
-            if (!animalType) throw new NotFoundException("Animal type not found");
+        const animalTypePromise = data.animalTypeId
+            ? this.animalTypeService.getAnimalTypeById(data.animalTypeId)
+            : null;
+    
+        const breedPromise = data.breedId
+            ? this.breedService.getBreedById(data.breedId)
+            : null;
+    
+        const [animalType, breed] = await Promise.all([animalTypePromise, breedPromise]);
+    
+        if (data.animalTypeId && !animalType) {
+            throw new NotFoundException("Animal type not found");
         }
+    
         if (data.breedId) {
-            const breed = await this.breedService.getBreedById(data.breedId);
-            if (!breed) throw new NotFoundException("Breed not found");
+            if (!breed) {
+                throw new NotFoundException("Breed not found");
+            }
             if (data.animalTypeId && breed.animalTypeId !== data.animalTypeId) {
                 throw new NotFoundException("Breed does not match animal type");
             }
         }
-
+    
         try {
             const pet = await this.prismaService.pet.update({
-                where: {
-                    id
-                },
-                data: {
-                    ...data
-                },
+                where: { id },
+                data: { ...data },
                 select: {
                     id: true,
                     name: true,
-                    breed: {
-                        select: {
-                            id: true,
-                            name: true,
-                        }
-                    },
-                    animalType: {
-                        select: {
-                            id: true,
-                            name: true,
-                        }
-                    },
+                    breed: { select: { id: true, name: true } },
+                    animalType: { select: { id: true, name: true } },
                     imageUrl: true,
                     age: true,
                     allergy: true,
@@ -237,18 +264,19 @@ export class PetService {
                                     firstname: true,
                                     lastname: true,
                                     avatar: true,
-                                }
+                                },
                             },
-                        }
+                        },
                     },
-                }
+                },
             });
-
+    
             return pet;
         } catch (err: unknown) {
             handleError(err, 'petService.updatePet');
         }
     }
+    
 
     async deletePet(id: string, ownerId: string): Promise<void> {
         try {

@@ -4,7 +4,6 @@ import {
     Controller,
     Delete,
     Get,
-    HttpException,
     HttpStatus,
     Param,
     Patch,
@@ -43,7 +42,7 @@ export class PetController {
                     const extension = file.mimetype.split("/")[1];
                     const id = uuidV4();
                     let filename: string;
-                    if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+                    if (!checkFileNameEncoding(originalFilename)) filename = `${generateRandomFileName()}-${id}.${extension}`;
                     else filename = `${id}-${originalFilename}.${fileExt}`;
                     callback(null, filename);
                 },
@@ -128,7 +127,7 @@ export class PetController {
                     const extension = file.mimetype.split("/")[1];
                     const id = uuidV4();
                     let filename: string;
-                    if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+                    if (!checkFileNameEncoding(originalFilename)) filename = `${generateRandomFileName()}-${id}.${extension}`;
                     else filename = `${id}-${originalFilename}.${fileExt}`;
                     callback(null, filename);
                 },
