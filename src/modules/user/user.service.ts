@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AccountState, Prisma, Role, State, User } from '@prisma/client';
 import { handleError, hashPassword, allowFieldUpdate } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
-import { CreatePetsitterDto, CreateUserDto, SearchType, SortBy, SortOrder, UpdatePetsitterDto, UpdateUserDto, UserQueryDto } from './dto';
+import { CreatePetsitterDto, CreateUserDto, SearchType, SortBy, SortOrder, UpdateCustomerDto, UpdatePetsitterDto, UpdateUserDto, UserQueryDto } from './dto';
 
 @Injectable()
 export class UserService {
@@ -99,17 +99,37 @@ export class UserService {
                     avatar: true,
                     accountStatus: true,
                     createdAt: true,
-                    customer: {
+                    phone: true,
+                    reportedList: {
                         select: {
                             id: true,
+                            type: true,
+                            content: true,
+                            reportImages: true,
+                            createdAt: true,
+                            reporter: {
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    firstname: true,
+                                    lastname: true,
+                                    avatar: true,
+                                    role: true,
+                                },
+                            },
+                            reported: {
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    firstname: true,
+                                    lastname: true,
+                                    avatar: true,
+                                    role: true,
+                                },
+                            }
                         }
-                    },
-                    petsitter: {
-                        select: {
-                            id: true,
-                        }
-                    },
-                }
+                    }
+                },
             });
 
             const total = await this.prismaService.user.count({ where });
@@ -117,8 +137,8 @@ export class UserService {
             return {
                 data: users,
                 total,
-                page,
-                limit,
+                totolPages: Math.ceil(total / limit),
+                currentPage: page,
             };
         } catch (err: unknown) {
             handleError(err, 'userService.GetAllUsers');
@@ -140,38 +160,65 @@ export class UserService {
                     phone: true,
                     role: true,
                     avatar: true,
-                    createdAt: true,
                     accountStatus: true,
+                    petsitter: {
+                        select: {
+                            id: true,
+                            certificateUrl: true,
+                            about: true,
+                            experience: true,
+                            quote: true,
+                            rating: true,
+                            location: true,
+                            serviceTags: true,
+                            coverImages: true,
+                        }
+                    },
+                    customer: {
+                        select: {
+                            id: true,
+                            activities: true,
+                            pets: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    age: true,
+                                    imageUrl: true,
+                                    gender: true,
+                                    weight: true,
+                                    allergy: true,
+                                    personality: true,
+                                    otherDetail: true,
+                                    animalType: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                    breed: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                },
+                            }
+                        }
+                    },
                 },
             });
+            switch (user.role) {
+                case Role.CUSTOMER:
+                    delete user.petsitter;
+                    break;
+                case Role.PETSITTER:
+                    delete user.customer;
+                    break;
+            }
             return user;
         } catch (err: unknown) {
             handleError(err, 'userService.getUserByIdWithoutCredential');
         }
-    }
-
-    async getUserById(userId: string): Promise<Partial<User>> {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: {
-                    id: userId
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    phone: true,
-                    role: true,
-                    avatar: true,
-                    accountStatus: true,
-                }
-            });
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.getUserById');
-        }
-
     }
 
     async getRefreshToken(userId: string): Promise<string | null> {
@@ -269,7 +316,31 @@ export class UserService {
                         select: {
                             id: true,
                             activities: true,
-                            pets: true
+                            pets: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    age: true,
+                                    allergy: true,
+                                    gender: true,
+                                    imageUrl: true,
+                                    weight: true,
+                                    personality: true,
+                                    otherDetail: true,
+                                    animalType: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                    breed: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                }
+                            }
                         }
                     },
                     petsitter: {
@@ -493,6 +564,69 @@ export class UserService {
         }
     }
 
+    async updateCustomer(userId: string, data: UpdateCustomerDto): Promise<Partial<User>> {
+        try {
+            const { password, ...otherField } = allowFieldUpdate(['password', 'firstname', 'lastname', 'phone', 'avatar'], data);
+            let hashedPassword: string | undefined = undefined;
+            if (password) {
+                hashedPassword = await hashPassword(password);
+            }
+
+            const user = await this.prismaService.user.update({
+                where: {
+                    id: userId,
+                },
+                data: {
+                    ...otherField,
+                    password: hashedPassword,
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    phone: true,
+                    role: true,
+                    avatar: true,
+                    accountStatus: true,
+                    customer: {
+                        select: {
+                            id: true,
+                            activities: true,
+                            pets: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    age: true,
+                                    gender: true,
+                                    allergy: true,
+                                    imageUrl: true,
+                                    personality: true,
+                                    animalType: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                    breed: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                }
+                            }
+                        },
+                    },
+                }
+            });
+
+            return user;
+        } catch (err: unknown) {
+            handleError(err, 'userService.updateCustomer');
+        }
+    }
+
     async updateRefreshToken(userId: string, refreshToken: string | null): Promise<void> {
         try {
             await this.prismaService.user.update({
@@ -502,7 +636,6 @@ export class UserService {
                 data: {
                     refreshToken
                 }
-
             });
         } catch (err: unknown) {
             handleError(err, 'userService.updateRefreshToken');
