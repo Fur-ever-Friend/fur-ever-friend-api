@@ -1,41 +1,94 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Breed } from '@prisma/client';
+import { handleError } from 'src/common/utils';
 
 @Injectable()
 export class BreedService {
     constructor(private readonly prismaService: PrismaService) { }
 
-    async getBreeds(): Promise<Breed[]> {
+    async getBreeds(): Promise<Partial<Breed>[]> {
         return this.prismaService.breed.findMany({
-            include: {
-                animalType: true
+            select: {
+                id: true,
+                name: true,
+                animalType: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
             }
         });
     }
 
-    async getBreedById(id: string): Promise<Breed> {
-        const breed = await this.prismaService.breed.findUnique({
-            where: {
-                id: id
-            },
-            include: {
-                animalType: true
-            }
-        });
-        if (!breed) throw new NotFoundException("Breed not found");
-        
-        return breed;
+    async getBreedById(id: string): Promise<Partial<Breed>> {
+        try {
+            const breed = await this.prismaService.breed.findUniqueOrThrow({
+                where: {
+                    id: id
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                        select: {
+                            id: true,
+                            name: true,
+                        }
+                    },
+                }
+            });
+            return breed;
+        } catch (err: unknown) {
+            handleError(err, "BreedService.getBreedById");
+        }
     }
 
-    async getBreedsByAnimalTypeId(animalTypeId: string): Promise<Breed[]> {
-        return this.prismaService.breed.findMany({
-            where: {
-                animalTypeId: animalTypeId
-            },
-            include: {
-                animalType: true
-            }
-        });
+    async getBreedsByAnimalTypeId(animalTypeId: string): Promise<Partial<Breed>[]> {
+        try {
+            const breeds = await this.prismaService.breed.findMany({
+                where: {
+                    animalTypeId: animalTypeId
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                        select: {
+                            id: true,
+                            name: true,
+                        }
+                    },
+                }
+            });
+            return breeds;
+        } catch (err: unknown) {
+            handleError(err, "BreedService.getBreedsByAnimalTypeId");
+        }
+    }
+
+    async addBreed(name: string, animalTypeId: string): Promise<Partial<Breed>> {
+        try {
+            const breed = await this.prismaService.breed.create({
+                data: {
+                    name,
+                    animalTypeId
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                        select: {
+                            id: true,
+                            name: true,
+                        }
+                    },
+                },
+            });
+            return breed;
+        } catch (err: unknown) {
+            handleError(err, "BreedService.addBreed");
+        }
     }
 }

@@ -2,11 +2,10 @@ import { z } from 'zod';
 import { Gender } from '@prisma/client';
 
 export const CreatePetSchema = z.object({
-    ownerId: z.string().uuid(),
     name: z.string().min(1).max(30),
     age: z.number(),
     weight: z.number(),
-    gender: z.enum([Gender.MALE, Gender.FEMALE]),
+    gender: z.nativeEnum(Gender),
     personality: z.string().optional(),
     allergy: z.string().optional(),
     otherDetail: z.string().optional(),

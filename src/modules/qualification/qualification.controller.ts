@@ -81,9 +81,9 @@ export class QualificationController {
 
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(':email')
-  async getQualification(@Param('email') email: string) {
-    const response = await this.qualificationService.getQualification(email);
+  @Get(':id')
+  async getQualification(@Param('id') id: string) {
+    const response = await this.qualificationService.getQualificationById(id);
     return {
       statusCode: HttpStatus.OK,
       message: "Qualification retrieved successfully",

@@ -19,10 +19,12 @@ export class AuthController {
     res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
     return res.json({
       statusCode: HttpStatus.CREATED,
-      message: 'Register Successful',
+      message: "Welcome aboard! Your account has been created successfully.",
       data: {
         user,
-        token
+        token: {
+          accessToken: token.accessToken,
+        }
       }
     });
   }
@@ -31,19 +33,18 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request, @Res() res: Response) {
-    const { id: userId, role, ...rest } = req.user as Omit<User, 'password'>
+    const { id: userId, role, ...otherFields } = req.user as Partial<User>;
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
     res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
     return res.json({
       statusCode: HttpStatus.OK,
-      message: 'Login Successful',
+      message: "Welcome back! You have logged in successfully.",
       data: {
         user: {
-          ...rest,
           id: userId,
+          ...otherFields,
           role,
-          refreshToken,
         },
         token: {
           accessToken,
@@ -56,13 +57,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res() res: Response) {
-    const { id } = req.user as Omit<User, 'password'>;
+    const { id } = req.user as Partial<User>;
     await this.authService.logout(id)
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return res.json({
       statusCode: HttpStatus.OK,
-      message: 'Logout Successful',
+      message: "Logout successful.",
     });
   }
 
@@ -71,16 +72,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: Request, @Res() res: Response) {
     const refreshToken = req.cookies?.refreshToken;
+    console.log("refreshToken", refreshToken);
     if (!refreshToken) throw new ForbiddenException();
-    const user = req.user as User;
+    const user = req.user as Partial<User>;
     if (!user || !user.refreshToken) throw new UnauthorizedException();
     const token = await this.authService.refreshTokens(user.id, refreshToken);
     res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 });
     res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 });
-    const { password, ...rest } = user;
+    const { password, refreshToken: rt, ...otherFields } = user;
     return res.json({
-      user: rest,
-      token
+      statusCode: HttpStatus.OK,
+      message: "Token refreshed successfully.",
+      data: {
+        user: otherFields,
+        token: {
+          accessToken: token.accessToken,
+        }
+      }
     });
   }
 

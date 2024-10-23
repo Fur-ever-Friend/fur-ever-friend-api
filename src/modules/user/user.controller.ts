@@ -27,34 +27,33 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { SetUserStatusDto } from './dto/set-user-status.dto';
 import { diskStorage } from 'multer';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { extname } from 'path';
-import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
 import { v4 as uuidV4 } from 'uuid';
 
 @Controller('users')
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
-    @Post("petsitter/:email")
+    @Post("petsitter/:email") // Create Petsitter
     async createPetsitter(@Param("email") email: string) {
-        const response = await this.userService.createPetsitter(email);
+        const result = await this.userService.createPetsitter(email);
         return {
             statusCode: HttpStatus.CREATED,
             message: 'Create Petsitter Successfully',
-            data: response,
+            data: result,
         }
     }
 
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN) // User Dashboard for Admin
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Get() // GET /users  - Get all users
+    @Get()
     async getUsers(@Query() queryParams: UserQueryDto) {
         return this.userService.findAllUsers(queryParams);
     }
 
-    @UseGuards(JwtAuthGuard)
-    @Get("me") // GET /users/me  - Get current user
+    @UseGuards(JwtAuthGuard) // Get current user
+    @Get("me")
     getCurrentUser(@CurrentUser() user: User) {
         const { password, refreshToken, ...rest } = user;
         return {
@@ -64,7 +63,7 @@ export class UserController {
         }
     }
 
-    @Patch('petsitter/:id')
+    @Patch('petsitter/:id') // Update Petsitter
     @UseInterceptors(
         FileFieldsInterceptor([
             { name: 'coverImage', maxCount: 5 },
@@ -96,12 +95,9 @@ export class UserController {
         @Body('json') json: string,
         @UploadedFiles() files: { avatar?: Express.Multer.File[], coverImage?: Express.Multer.File[] },
     ) {
-        console.log('files', files);
         try {
             if (!json) throw new BadRequestException('No JSON data provided');
-            console.log('json', json);
             const jsonParse = JSON.parse(json);
-            console.log('jsonParse', jsonParse);
             const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
             if (!validateData.success) throw new BadRequestException('Invalid Field');
 
@@ -124,11 +120,11 @@ export class UserController {
                 }
             }
 
-            const response = await this.userService.updatePetsitter(userId, updatePetsitterDto);
+            const result = await this.userService.updatePetsitter(userId, updatePetsitterDto);
             return {
                 statusCode: HttpStatus.OK,
                 message: 'Update Petsitter Successfully',
-                data: response,
+                data: result,
             };
         } catch (error) {
             console.error(`[ERROR]`, error);
@@ -138,7 +134,7 @@ export class UserController {
         }
     }
 
-    @Patch('/customer/:id')
+    @Patch('/customer/:id') // Update Customer
     @UseInterceptors(
         FileInterceptor('avatar', {
             storage: diskStorage({
@@ -164,80 +160,75 @@ export class UserController {
     )
     async updateCustomer(
         @Param('id') userId: string,
-        @Body("json") jsonData: string,
+        @Body("json") jsonStr: string,
         @UploadedFile() avatarFile: Express.Multer.File,
     ) {
         try {
-            const jsonParse = JSON.parse(jsonData);
-            const validateData = UpdateUserDtoSchema.safeParse(jsonParse);
-            if (!validateData.success) throw new BadRequestException("Invalid Field");
+            const jsonParse = JSON.parse(jsonStr);
+            const validateData = UpdateUserDtoSchema.parse(jsonParse);
 
-            const updateUserDto = validateData.data as UpdateUserDto;
+            const updateUserDto = validateData as UpdateUserDto;
 
             if (avatarFile) {
                 updateUserDto.avatar = avatarFile.filename;
             }
 
-            const response = await this.userService.updateUser(userId, updateUserDto);
+            const result = await this.userService.updateUser(userId, updateUserDto);
             return {
                 statusCode: HttpStatus.OK,
-                message: 'Update Customer Successfully',
-                data: response,
+                message: "Customer updated successfully.",
+                data: result,
             }
-        } catch (error) {
-            console.log("[ERROR]", error);
-            if (error instanceof SyntaxError) throw new BadRequestException("Invalid JSON format");
-            else if (error instanceof HttpException) throw error;
-            else throw new BadRequestException("Invalid Field");
+        } catch (err: unknown) {
+            handleError(err, 'updateCustomer');
         }
     }
 
-
-    @UseGuards(JwtAuthGuard)
-    @Get(":userId") // GET /users/:userId  - Get user by id
+    @UseGuards(JwtAuthGuard) // Get User by ID with authorized user
+    @Get(":userId")
     async getUserById(@Param("userId") userId: string, @CurrentUser() user: User) {
         if (user.role === Role.ADMIN) {
             return this.userService.getUserByIdWithDetails(userId);
         } else {
-            const response = await this.userService.getUserByIdWithoutCredential(userId);
-            if (user.role === response.role) throw new NotFoundException('User not found'); //same role cannot see each other
+            const result = await this.userService.getUserByIdWithoutCredential(userId);
+            if (user.role === result.role) throw new NotFoundException('User not found'); //same role cannot see each other
             return {
                 statusCode: HttpStatus.OK,
-                message: "User Founded",
-                data: response,
+                message: "User retrieved successfully.",
+                data: result,
             }
         }
     }
 
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN) // Set User State by Admin
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Put("set-state/:userId") // PUT /users/status/:userId
-    async setUserState(@Param("userId") userId: string, @Body() setUserStatusDto: SetUserStatusDto) {
-        await this.userService.setUserState(userId, setUserStatusDto.state);
+    async setUserState(@Param("userId") userId: string, @Body() { state }: SetUserStatusDto) {
+        await this.userService.setUserState(userId, state);
         return {
             statusCode: HttpStatus.OK,
-            message: 'User state updated',
+            message: `User with ID ${userId} state has been updated to ${state}.`,
         }
     }
 
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN) // Delete User by Admin
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Delete(":userId") // DELETE /users/:userId
     async deleteUser(@Param("userId") userId: string) {
         await this.userService.deleteUser(userId, true);
         return {
             statusCode: HttpStatus.OK,
-            message: 'User deleted',
+            message: `User with ID ${userId} has been deleted successfully.`,
         }
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard) // Delete Current User
     @Delete("me") // DELETE /users/me
-    async deleteCurrentUser(@CurrentUser() user: User) {
-        await this.userService.deleteUser(user.id, false);
+    async deleteCurrentUser(@CurrentUser() { id: userId }: User) {
+        await this.userService.deleteUser(userId, false);
         return {
             statusCode: HttpStatus.OK,
-            message: 'User deleted',
+            message: `User with ID ${userId} has been deleted successfully.`,
         }
     }
 
