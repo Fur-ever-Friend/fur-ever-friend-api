@@ -24,7 +24,7 @@ export class QualificationController {
           const extension = file.mimetype.split("/")[1];
           const id = uuidV4();
           let filename: string;
-          if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
+          if (!checkFileNameEncoding(originalFilename)) filename = `${generateRandomFileName()}-${id}.${extension}`;
           else filename = `${originalFilename}-${id}.${fileExt}`;
           callback(null, filename);
         },
@@ -103,5 +103,3 @@ export class QualificationController {
     }
   }
 }
-
-
