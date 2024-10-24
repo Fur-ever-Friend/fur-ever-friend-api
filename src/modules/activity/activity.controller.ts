@@ -10,23 +10,24 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Activity, ActivityProgress, Report, Review, Role, User } from '@prisma/client';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { ActivityService } from './activity.service';
-import { ActivityResponseDto } from './dto';
+import {
+  ActivityResponseDto,
+  CreateReportDto,
+  CreateReviewDto,
+  CreateActivityDto,
+  CreateActivityProgressDto,
+} from './dto';
+import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { CreateActivityDto } from './dto/request/create-activity.dto';
+import { diskStorage } from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
-
-import { Activity, ActivityProgress, Report, Review, Role, User } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
-import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { CreateActivityProgressDto } from './dto/create-activity-progress.dto';
 import { v4 as uuidV4 } from 'uuid';
-import { CreateReportDto } from './dto/create-report.dto';
-import { CreateReviewDto } from './dto/create-review.dto';
 
 @ApiTags('activities')
 @ApiBearerAuth()

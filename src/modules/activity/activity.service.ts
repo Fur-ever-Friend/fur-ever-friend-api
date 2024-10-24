@@ -1,13 +1,15 @@
 import { Activity, ActivityProgress, Report, Review } from '@prisma/client';
 import { ActivityResponseDto } from './dto/response/activity-response.dto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateActivityDto } from './dto/request/create-activity.dto';
-import { CreateActivityProgressDto } from './dto/create-activity-progress.dto';
+import {
+  CreateReportDto,
+  CreateReviewDto,
+  CreateActivityDto,
+  CreateActivityProgressDto,
+} from './dto';
 import * as cron from 'node-cron';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateAndConvertDateTimes } from '@/common/utils/date-time-utils';
-import { CreateReportDto } from './dto/create-report.dto';
-import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ActivityService {
