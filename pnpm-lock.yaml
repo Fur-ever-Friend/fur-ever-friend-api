@@ -62,6 +62,9 @@ importers:
       multer:
         specifier: 1.4.5-lts.1
         version: 1.4.5-lts.1
+      node-cron:
+        specifier: ^3.0.3
+        version: 3.0.3
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -2609,6 +2612,10 @@ packages:
   node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
 
+  node-cron@3.0.3:
+    resolution: {integrity: sha512-dOal67//nohNgYWb+nWmg5dkFdIwDm8EpeGYMekPMrngV3637lqnX0lbUcCtgibHTz6SEz7DAIjKvKDFYCnO1A==}
+    engines: {node: '>=6.0.0'}
+
   node-emoji@1.11.0:
     resolution: {integrity: sha512-wo2DpQkQp7Sjm2A0cq+sN7EHKO6Sl0ctXeBdFZrL9T9+UywORbufTcTZxom8YqpLQt/FqNMUkOpkZrJVYSKD3A==}
 
@@ -3399,6 +3406,10 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    hasBin: true
+
+  uuid@8.3.2:
+    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
 
   v8-compile-cache-lib@3.0.1:
@@ -6537,6 +6548,10 @@ snapshots:
 
   node-abort-controller@3.1.1: {}
 
+  node-cron@3.0.3:
+    dependencies:
+      uuid: 8.3.2
+
   node-emoji@1.11.0:
     dependencies:
       lodash: 4.17.21
@@ -7322,6 +7337,8 @@ snapshots:
   utils-merge@1.0.1: {}
 
   uuid@10.0.0: {}
+
+  uuid@8.3.2: {}
 
   v8-compile-cache-lib@3.0.1: {}
 

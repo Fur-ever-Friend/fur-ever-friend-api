@@ -41,7 +41,7 @@ model Petsitter {
   petsitterServiceTag PetsitterServiceTag[]
   favorites           Favorite[]
 
-  invitation          Invitation[]
+  invitation Invitation[]
 
   @@map("petsitters")
 }
@@ -103,17 +103,14 @@ model Activity {
   petsitter   Petsitter? @relation(fields: [petsitterId], references: [id])
   petsitterId String?    @map("petsitter_id")
 
-  pet          Pet       @relation(fields: [petId], references: [id])
-  petId        String
-  
   requests PetsitterRequest[]
 
   progresses ActivityProgress[]
 
   services ActivityService[]
 
-  payments   Payment[]
-  review     Review?
+  payments Payment[]
+  review   Review?
 
   invitation Invitation[]
 
@@ -192,7 +189,6 @@ model Pet {
   services ActivityService[]
 
   @@map("pets")
-  Activity Activity[]
 }
 
 model AnimalType {
@@ -246,7 +242,7 @@ model ActivityService {
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
-  status Boolean @default(false)
+  status ActivityState @default(PENDING)
 
   @@map("activity_services")
 }

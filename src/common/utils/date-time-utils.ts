@@ -37,13 +37,21 @@ export function validateDateTimes(startDateTime: Date, endDateTime: Date): void 
 export function validateAndConvertDateTimes(
   startDateTime: Date,
   endDateTime: Date,
-  timeZone: string = 'Asia/Bangkok'
+  dbTimeZone: string = 'UTC'
 ): { startDateTimeUtc: Date; endDateTimeUtc: Date } {
   const startDate = toDate(startDateTime);
   const endDate = toDate(endDateTime);
 
-  validateDateTimes(startDate, endDate);
-  const startDateTimeUtc = convertToUtc(startDate, timeZone);
-  const endDateTimeUtc = convertToUtc(endDate, timeZone);
+  // Convert to user's timezone for validation
+  const startDateInUserTimeZone = convertToBangkokTime(startDate);
+  const endDateInUserTimeZone = convertToBangkokTime(endDate);
+
+  // Validate date-times in user's timezone
+  validateDateTimes(startDateInUserTimeZone, endDateInUserTimeZone);
+
+  // Convert to UTC for storage
+  const startDateTimeUtc = convertToUtc(startDate, dbTimeZone);
+  const endDateTimeUtc = convertToUtc(endDate, dbTimeZone);
+
   return { startDateTimeUtc, endDateTimeUtc };
 }

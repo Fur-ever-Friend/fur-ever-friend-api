@@ -1,31 +1,59 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Activity } from '@prisma/client';
+import { ActivityService, Activity, ActivityState, ServiceType } from '@prisma/client';
 
-export class ActivityResponseDto {
-
-  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
+export class ActivityServiceDto {
+  @ApiProperty()
   id: string;
 
-  @ApiProperty({ example: 'Morning Run' })
-  name: string;
-
-  @ApiProperty({ example: 'A quick run in the park' })
+  @ApiProperty()
   detail: string;
 
-  @ApiProperty({ example: '2023-10-01T08:00:00Z' })
+  @ApiProperty()
+  serviceType: ServiceType;
+
+  @ApiProperty()
+  petId: string;
+}
+
+export class ActivityResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  detail: string;
+
+  @ApiProperty()
   startDateTime: Date;
 
-  @ApiProperty({ example: '2023-10-01T09:00:00Z' })
+  @ApiProperty()
   endDateTime: Date;
 
-  @ApiProperty({ example: 'Central Park' })
+  @ApiProperty()
   pickupPoint: string;
 
   @ApiProperty({ example: 20 })
   price: number;
 
   @ApiProperty({ example: 'ASSIGNED' })
-  state: string;
+  state: ActivityState;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+
+  @ApiProperty()
+  customerId: string;
+
+  @ApiProperty()
+  petsitterId: string | null;
+
+  @ApiProperty({ type: [ActivityServiceDto] })
+  services: ActivityServiceDto[];
 
   static selectFields() {
     return {
@@ -37,10 +65,22 @@ export class ActivityResponseDto {
       pickupPoint: true,
       price: true,
       state: true,
+      createdAt: true,
+      updatedAt: true,
+      customerId: true,
+      petsitterId: true,
+      services: {
+        select: {
+          id: true,
+          detail: true,
+          serviceType: true,
+          petId: true,
+        },
+      },
     };
   }
 
-  static formatActivityResponse(activity: Activity): ActivityResponseDto {
+  static formatActivityResponse(activity: Activity & { services: ActivityService[] }): ActivityResponseDto {
     return {
       id: activity.id,
       name: activity.name,
@@ -50,6 +90,16 @@ export class ActivityResponseDto {
       pickupPoint: activity.pickupPoint,
       price: activity.price,
       state: activity.state,
+      createdAt: activity.createdAt,
+      updatedAt: activity.updatedAt,
+      customerId: activity.customerId,
+      petsitterId: activity.petsitterId,
+      services: activity.services.map(service => ({
+        id: service.id,
+        detail: service.detail,
+        serviceType: service.serviceType,
+        petId: service.petId,
+      })),
     };
   }
 }

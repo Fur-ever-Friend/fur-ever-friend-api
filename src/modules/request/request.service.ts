@@ -144,6 +144,6 @@ export class RequestService {
       data: { state: 'REJECTED' },
     });
 
-    return { message: 'Request accepted and petsitter assigned to the activity' };
+    return { message: 'Request accepted and petsitter assigned to an activity' };
   }
 }

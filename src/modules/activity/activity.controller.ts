@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -13,7 +13,7 @@ import { CreateActivityDto } from './dto/request/create-activity.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 
-import { Role, User } from '@prisma/client';
+import { Activity, Role, User } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
 
 @ApiTags('activities')
@@ -35,17 +35,17 @@ export class ActivityController {
   @ApiOkResponse({ status: 200 })
   @Get('me')
   @Roles(Role.CUSTOMER)
-  async getYourActivities(@CurrentUser() user: User): Promise<ActivityResponseDto[]> {
+  async getYourActivities(@CurrentUser() user: User): Promise<Activity[]> {
     return this.activityService.getYourActivities(user.id);
   }
 
   @ApiOperation({ summary: 'Get activities by id' })
   @ApiOkResponse({ status: 200 })
   @Get(':id')
-  async getActivityById(@Param('id') id: string): Promise<ActivityResponseDto> {
+  async getActivityById(@Param('id') id: string): Promise<Activity> {
     return this.activityService.getActivityById(id);
   }
-
+  
   @ApiBody({ type: CreateActivityDto })
   @ApiOperation({ summary: 'Create activity' })
   @ApiOkResponse({ status: 201 })
@@ -53,5 +53,29 @@ export class ActivityController {
   @Roles(Role.CUSTOMER)
   async createActivity(@CurrentUser() user: User, @Body() data: CreateActivityDto) {
     return this.activityService.createActivity(data, user.id);
+  }
+
+  @ApiOperation({ summary: 'Update activity state to RETURNING' })
+  @ApiOkResponse({ status: 200 })
+  @Patch(':id/returning')
+  @Roles(Role.CUSTOMER, Role.PETSITTER)
+  async updateActivityToReturning(@Param('id') id: string) {
+    return this.activityService.updateActivityToReturning(id);
+  }
+
+  @ApiOperation({ summary: 'Update activity state to COMPLETED' })
+  @ApiOkResponse({ status: 200 })
+  @Patch(':id/completed')
+  @Roles(Role.CUSTOMER, Role.PETSITTER)
+  async updateActivityToCompleted(@Param('id') id: string) {
+    return this.activityService.updateActivityToCompleted(id);
+  }
+
+  @ApiOperation({ summary: 'Cancel activity' })
+  @ApiOkResponse({ status: 200 })
+  @Patch(':id/cancel')
+  @Roles(Role.CUSTOMER)
+  async cancelActivity(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.activityService.cancelActivity(id, user.id);
   }
 }

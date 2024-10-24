@@ -16,7 +16,7 @@ import { Roles } from '@/common/decorators/roles.decorator';
 export class RequestController {
   constructor(private readonly requestService: RequestService) {}
 
-  @ApiOperation({ summary: 'Create a request to join an activity' })
+  @ApiOperation({ summary: 'Create a request to an activity' })
   @ApiResponse({ status: 201 })
   @Post()
   @Roles(Role.PETSITTER)

@@ -1,86 +1,52 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceType } from '@prisma/client';
+import { IsArray, IsDateString, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsString, IsDate, IsNotEmpty, IsUUID, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import { ServiceType } from '@prisma/client';
 
-class CreateActivityServiceDto {
-  @ApiProperty({
-    example: 'Detailed grooming service',
-    required: true,
-  })
+class CreateServiceDto {
+  @ApiProperty({ example: "Walking service for pet 1" })
   @IsString()
   @IsNotEmpty()
   detail: string;
 
-  @ApiProperty({
-    example: 'PET_GROOMING',
-    required: true,
-  })
-  @IsEnum(ServiceType)
+  @ApiProperty({ example: "PET_WALKING" })
+  @IsString()
   @IsNotEmpty()
   serviceType: ServiceType;
 
+  @ApiProperty({ example: "pet-id-1" })
+  @IsString()
+  @IsNotEmpty()
   petId: string;
 }
 
 export class CreateActivityDto {
-  @ApiProperty({
-    example: "Morning Run",
-    required: true,
-  })
+  @ApiProperty({ example: "Morning Walk" })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({
-    example: "A quick run in the park",
-    required: true,
-  })
+  @ApiProperty({ example: "A morning walk in the park" })
   @IsString()
   @IsNotEmpty()
   detail: string;
 
-  @ApiProperty({
-    example: "2023-10-01T08:00:00Z",
-    required: true,
-  })
-  @IsDate()
-  @IsNotEmpty()
-  @Type(() => Date)
+  @ApiProperty({ example: "2023-10-01T08:00:00Z" })
+  @IsDateString()
   startDateTime: Date;
 
-  @ApiProperty({
-    example: "2023-10-01T09:00:00Z",
-    required: true,
-  })
-  @IsDate()
-  @IsNotEmpty()
-  @Type(() => Date)
+  @ApiProperty({ example: "2023-10-01T09:00:00Z" })
+  @IsDateString()
   endDateTime: Date;
 
-  @ApiProperty({
-    example: "Central Park",
-    required: true,
-  })
+  @ApiProperty({ example: "Central Park" })
   @IsString()
   @IsNotEmpty()
   pickupPoint: string;
 
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    required: true,
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  petId: string;
-
-  @ApiProperty({
-    type: [CreateActivityServiceDto],
-    required: true,
-  })
+  @ApiProperty({ type: [CreateServiceDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateActivityServiceDto)
-  services: CreateActivityServiceDto[];
+  @Type(() => CreateServiceDto)
+  services: CreateServiceDto[];
 }
