@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateActivityDto } from './dto/request/create-activity.dto';
+import { Activity, ActivityProgress } from '@prisma/client';
 import { ActivityResponseDto } from './dto/response/activity-response.dto';
-import { validateAndConvertDateTimes } from '@/common/utils/date-time-utils';
-import { Activity } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateActivityDto } from './dto/request/create-activity.dto';
+import { CreateActivityProgressDto } from './dto/create-activity-progress.dto';
 import * as cron from 'node-cron';
+import { PrismaService } from '../prisma/prisma.service';
+import { validateAndConvertDateTimes } from '@/common/utils/date-time-utils';
 
 @Injectable()
 export class ActivityService {
@@ -260,5 +261,66 @@ export class ActivityService {
     });
 
     return { message: 'Activity state updated to CANCELLED' };
+  }
+
+  async createActivityProgress(
+    data: CreateActivityProgressDto,
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<ActivityProgress> {
+    const activityService = await this.prismaService.activityService.findUnique({
+      where: { id: data.activityServiceId },
+      include: { activity: true },
+    });
+
+    if (!activityService) {
+      throw new NotFoundException(`Activity Service not found`);
+    }
+
+    if (activityService.activity.petsitterId !== userId) {
+      throw new BadRequestException(
+        'You are not authorized to add progress to this activity service',
+      );
+    }
+
+    const activityProgress = await this.prismaService.activityProgress.create({
+      data: {
+        content: data.content,
+        activityId: activityService.activityId,
+        images: {
+          create: {
+            imageUrl: file.filename,
+          },
+        },
+      },
+    });
+
+    await this.prismaService.activityService.update({
+      where: { id: data.activityServiceId },
+      data: { status: 'COMPLETED' },
+    });
+
+    return activityProgress;
+  }
+
+  async getActivityProgress(userId: string): Promise<ActivityProgress[]> {
+    const customer = await this.prismaService.customer.findUnique({
+      where: { userId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer not found`);
+    }
+
+    return this.prismaService.activityProgress.findMany({
+      where: {
+        activity: {
+          customerId: customer.id,
+        },
+      },
+      include: {
+        images: true,
+      },
+    });
   }
 }
