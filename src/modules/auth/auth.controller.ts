@@ -6,6 +6,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LocalAuthGuard } from './guard/local-auth.guard';
 import { RefreshJwtAuthGuard } from './guard/refresh-auth.guard';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -30,6 +31,9 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login a user' })
+  @ApiBody({ type: CreateUserDto }) // Assuming login uses the same DTO
+  @ApiResponse({ status: 200, description: 'Login Successful' })
   async login(@Req() req: Request, @Res() res: Response) {
     const { id: userId, role, ...rest } = req.user as Omit<User, 'password'>
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
