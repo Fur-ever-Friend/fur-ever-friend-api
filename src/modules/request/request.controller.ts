@@ -8,6 +8,7 @@ import { RequestService } from './request.service';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Role, User } from '@prisma/client';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { PaymentInfoDto } from './dto/request/payment-info.dto';
 
 @ApiTags('requests')
 @ApiBearerAuth()
@@ -43,11 +44,15 @@ export class RequestController {
     return this.requestService.getRequestsByActivity(activityId);
   }
 
-  @ApiOperation({ summary: 'Accept a request' })
+  @ApiOperation({ summary: 'Accept a request with optional payment' })
   @ApiResponse({ status: 200 })
   @Patch(':requestId/accept')
   @Roles(Role.CUSTOMER)
-  async acceptRequest(@CurrentUser() user: User, @Param('requestId') requestId: string) {
-    return this.requestService.acceptRequest(user.id, requestId);
+  async acceptRequest(
+    @CurrentUser() user: User,
+    @Param('requestId') requestId: string,
+    @Body() paymentInfo?: PaymentInfoDto,
+  ) {
+    return this.requestService.acceptRequest(user.id, requestId, paymentInfo);
   }
 }

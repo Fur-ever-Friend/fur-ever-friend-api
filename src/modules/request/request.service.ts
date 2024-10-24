@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateRequestDto } from './dto/request/create-request.dto';
+import { CreateRequestDto, PaymentInfoDto, GetRequestResponseDto } from './dto';
 import { convertToUtc } from '@/common/utils';
-import { GetRequestResponseDto } from './dto';
+import { PaymentService } from '../payment/payment.service';
+import { PrismaService } from '../prisma/prisma.service';
+
 
 @Injectable()
 export class RequestService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly paymentService: PaymentService
+  ) {}
 
   async createRequest(userId: string, createRequestDto: CreateRequestDto) {
     const { activityId, price } = createRequestDto;
@@ -92,7 +96,7 @@ export class RequestService {
     return requests.map(GetRequestResponseDto.formatRequestResponse);
   }
 
-  async acceptRequest(userId: string, requestId: string) {
+  async acceptRequest(userId: string, requestId: string, paymentInfo?: PaymentInfoDto) {
     const customer = await this.prismaService.customer.findUnique({
       where: { userId },
     });
@@ -122,6 +126,23 @@ export class RequestService {
       throw new BadRequestException('You are not authorized to accept this request');
     }
 
+    if (paymentInfo) {
+      const paymentResult = await this.paymentService.processPayment(paymentInfo);
+
+      if (!paymentResult.success) {
+        throw new BadRequestException('Payment failed');
+      }
+
+      await this.prismaService.payment.create({
+        data: {
+          amount: request.price,
+          state: 'ACCEPTED',
+          transactionId: paymentResult.transactionId,
+          activity: { connect: { id: activity.id } },
+        },
+      });
+    }
+
     await this.prismaService.activity.update({
       where: { id: activity.id },
       data: {
@@ -146,4 +167,5 @@ export class RequestService {
 
     return { message: 'Request accepted and petsitter assigned to an activity' };
   }
+
 }
