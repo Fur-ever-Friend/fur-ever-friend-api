@@ -1,4 +1,4 @@
-import { Activity, ActivityProgress } from '@prisma/client';
+import { Activity, ActivityProgress, Report, Review } from '@prisma/client';
 import { ActivityResponseDto } from './dto/response/activity-response.dto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateActivityDto } from './dto/request/create-activity.dto';
@@ -6,6 +6,8 @@ import { CreateActivityProgressDto } from './dto/create-activity-progress.dto';
 import * as cron from 'node-cron';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateAndConvertDateTimes } from '@/common/utils/date-time-utils';
+import { CreateReportDto } from './dto/create-report.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ActivityService {
@@ -321,6 +323,66 @@ export class ActivityService {
       include: {
         images: true,
       },
+    });
+  }
+
+  async createReport(
+    data: CreateReportDto,
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<Report> {
+    const report = await this.prismaService.report.create({
+      data: {
+        type: data.type,
+        content: data.content,
+        reportedId: data.reportedId,
+        reporterId: userId,
+        reportImage: {
+          create: {
+            imageUrl: file.filename,
+          },
+        },
+      },
+    });
+
+    return report;
+  }
+
+  async createReview(data: CreateReviewDto, userId: string): Promise<Review> {
+    const review = await this.prismaService.review.create({
+      data: {
+        content: data.content,
+        rating: data.rating,
+        activity: {
+          connect: { id: data.activityId },
+        },
+      },
+    });
+
+    await this.updatePetsitterRating(data.petsitterId);
+
+    return review;
+  }
+
+  private async updatePetsitterRating(petsitterId: string) {
+    const reviews = await this.prismaService.review.findMany({
+      where: { activity: { petsitterId } },
+    });
+
+    const reports = await this.prismaService.report.findMany({
+      where: { reportedId: petsitterId },
+    });
+
+    const totalReviews = reviews.length;
+    const totalReports = reports.length;
+
+    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
+
+    const newRating = averageRating - totalReports * 0.1; // Deduct 0.1 for each report
+
+    await this.prismaService.petsitter.update({
+      where: { id: petsitterId },
+      data: { rating: newRating },
     });
   }
 }
