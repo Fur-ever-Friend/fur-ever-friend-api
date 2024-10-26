@@ -1,10 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { QualificationService } from './qualification.service';
-import { QualificationDto, QualificationSchema } from './dto/qualification.dto';
+import { QualificationDto, QualificationSchema, UpdateQualificationStateDto } from './dto/qualification.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from "uuid";
-import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
+import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils/check-filename-encoding';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Controller('qualifications')
 export class QualificationController {
@@ -20,14 +24,14 @@ export class QualificationController {
           const extension = file.mimetype.split("/")[1];
           const id = uuidV4();
           let filename: string;
-          if (!checkFileNameEncoding(originalFilename)) filename = `${id}-${generateRandomFileName()}.${extension}`;
-          else filename = `${id}-${originalFilename}.${fileExt}`;
+          if (!checkFileNameEncoding(originalFilename)) filename = `${generateRandomFileName()}-${id}.${extension}`;
+          else filename = `${originalFilename}-${id}.${fileExt}`;
           callback(null, filename);
         },
       }),
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter(_, file, callback) {
-        const validExtensions = /\.(jpg|jpeg|png|gif)$/;
+        const validExtensions = /\.(jpg|jpeg|png|pdf)$/;
         if (!file.originalname.match(validExtensions)) {
           return callback(null, false);
         }
@@ -35,26 +39,67 @@ export class QualificationController {
       },
     }
     ))
-  create(@Body("json") json: string, @UploadedFile() file: Express.Multer.File) {
+  async create(@Body("json") json: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file attached")
-    try {
-      const jsonParse = JSON.parse(json);
-      const validateData = QualificationSchema.safeParse(jsonParse);
-      if (!validateData.success) {
-        throw new BadRequestException("Invalid Field");
-      }
-      const data = validateData.data as QualificationDto;
-      return this.qualificationService.save(data, file);
-    } catch (error) {
-      if (error instanceof BadRequestException) throw error;
-      throw new BadRequestException("Invalid JSON");
+    const jsonParse = JSON.parse(json);
+    const validateData = QualificationSchema.safeParse(jsonParse);
+    if (!validateData.success) {
+      throw new BadRequestException("Invalid Field");
+    }
+    const data = validateData.data as QualificationDto;
+    const response = await this.qualificationService.create(data, file);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: "Qualification created successfully",
+      data: response
     }
   }
 
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  getQualifications() {
-    return this.qualificationService.getQualifications();
+  async getQualifications() {
+    const response = await this.qualificationService.getQualifications();
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Qualifications retrieved successfully",
+      data: response
+    }
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put(':id')
+  async updateQualification(@Param('id') id: string, @Body() updateQualificationStateDto: UpdateQualificationStateDto) {
+    const response = await this.qualificationService.updateQualification(id, updateQualificationStateDto.state);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Qualification updated successfully",
+      data: response
+    }
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get(':id')
+  async getQualification(@Param('id') id: string) {
+    const response = await this.qualificationService.getQualificationById(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Qualification retrieved successfully",
+      data: response
+    }
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id')
+  async deleteQualification(@Param('id') id: string) {
+    const response = await this.qualificationService.deleteQualification(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Qualification deleted successfully",
+      data: response
+    }
   }
 }
-
-

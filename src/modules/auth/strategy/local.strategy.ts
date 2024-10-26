@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 import { AuthService } from '../auth.service';
 import { User } from '@prisma/client';
+import { LoginSchema } from '../dto';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -11,12 +12,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         super({ usernameField: 'email' });
     }
 
-    async validate(email: string, password: string): Promise<Omit<User, 'password'>> {
-        if (typeof email !== 'string' || !email.includes('@')) {
-            throw new UnauthorizedException('Invalid email format');
-        }
-        const user = await this.authService.validateLogin(email, password)
-        return user;
+    async validate(email: string, password: string): Promise<Partial<User>> {
+        return this.authService.validateLogin(email, password);
     }
 
 }

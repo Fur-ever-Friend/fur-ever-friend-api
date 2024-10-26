@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { QualificationDto } from './dto/qualification.dto';
-import { Prisma, Qualification } from '@prisma/client';
+import { Prisma, Qualification, State } from '@prisma/client';
 import { hashPassword } from 'src/common/utils';
 
 @Injectable()
 export class QualificationService {
     constructor(private readonly prismaService: PrismaService) { }
 
-    async save({ password, ...rest }: QualificationDto, file: Express.Multer.File) {
+    async create({ password, ...rest }: QualificationDto, file: Express.Multer.File) {
         try {
             const hashedPassword = await hashPassword(password);
             const qualification = await this.prismaService.qualification.create({
@@ -16,7 +16,14 @@ export class QualificationService {
                     ...rest,
                     password: hashedPassword,
                     certificateUrl: file.filename,
-                } as any,
+                } as Prisma.QualificationCreateInput,
+                select: {
+                    id: true,
+                    email: true,
+                    state: true,
+                    certificateUrl: true,
+                    createdAt: true,
+                }
             });
             return qualification;
         } catch (error) {
@@ -32,7 +39,7 @@ export class QualificationService {
         const qualification = await this.prismaService.qualification.findUnique({
             where: {
                 email
-            }
+            },
         })
 
         if (!qualification) throw new NotFoundException(`Qualification with email: ${email} not found!`);
@@ -40,8 +47,57 @@ export class QualificationService {
         return qualification;
     }
 
-    async getQualifications(): Promise<Qualification[]> {
-        return this.prismaService.qualification.findMany();
+    async getQualificationById(id: string): Promise<Partial<Qualification>> {
+        const qualification = await this.prismaService.qualification.findUnique({
+            where: {
+                id
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                state: true,
+                certificateUrl: true,
+                createdAt: true,
+            }
+        })
+
+        if (!qualification) throw new NotFoundException(`Qualification with id: ${id} not found!`);
+
+        return qualification;
     }
 
+    async getQualifications(): Promise<Partial<Qualification>[]> {
+        return this.prismaService.qualification.findMany({
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                state: true,
+                certificateUrl: true,
+                createdAt: true,
+            }
+        });
+    }
+
+    async updateQualification(id: string, state: State): Promise<boolean> {
+        const qualification = await this.prismaService.qualification.update({
+            where: { id },
+            data: { state }
+        });
+        if (!qualification) throw new NotFoundException(`Qualification with id: ${id} not found!`);
+        return true;
+    }
+
+    async deleteQualification(id: string): Promise<boolean> {
+        const qualification = await this.prismaService.qualification.delete({
+            where: { id }
+        });
+
+        if (!qualification) throw new NotFoundException(`Qualification with id: ${id} not found!`);
+
+        return true;
+    }
 }

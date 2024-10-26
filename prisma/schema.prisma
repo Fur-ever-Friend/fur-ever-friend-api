@@ -13,73 +13,72 @@ model User {
   password      String
   firstname     String?      @db.VarChar(30)
   lastname      String?      @db.VarChar(30)
+  avatar        String?
   phone         String?      @db.VarChar(20)
   refreshToken  String?      @unique @map("refresh_token")
   role          Role
   accountStatus AccountState @default(ACTIVE) @map("account_status")
+  createdAt     DateTime     @default(now()) @map("created_at")
 
-  customer     Customer?
-  petsitter    Petsitter?
-  admin        Admin?
-  reporterList Report[]   @relation("reporter")
-  reportedList Report[]   @relation("reported")
+  customer      Customer?
+  petsitter     Petsitter?
+  admin         Admin?
+  reporterList  Report[]       @relation("reporter")
+  reportedList  Report[]       @relation("reported")
+  notifications Notification[]
 
   @@map("users")
 }
 
 model Petsitter {
-  id             String @id @default(uuid())
-  user           User   @relation(fields: [userId], references: [id])
-  userId         String @unique @map("user_id")
-  information    String @default("")
-  rating         Float  @default(4.0)
-  certificateUrl String @map("certificate_url")
+  id             String     @id @default(uuid())
+  user           User       @relation(fields: [userId], references: [id])
+  userId         String     @unique @map("user_id")
+  quote          String     @default("")
+  location       String     @default("")
+  about          String     @default("")
+  experience     String     @default("")
+  rating         Float      @default(4.0)
+  certificateUrl String     @map("certificate_url")
+  coverImages    String[]   @map("cover_images")
+  activities     Activity[]
+  serviceTags    String[]   @map("service_tags")
 
-  activities Activity[]
+  requests   PetsitterRequest[]
+  favourites Favourite[]
 
-  requests            PetsitterRequest[]
-  petsitterServiceTag PetsitterServiceTag[]
-  favorites           Favorite[]
-
-  invitation          Invitation[]
+  invitations Invitation[]
+  reviews     Review[]
 
   @@map("petsitters")
 }
 
-model PetsitterServiceTag {
-  id          String      @id @default(uuid())
-  serviceType ServiceType @map("service_type")
-  petsitter   Petsitter   @relation(fields: [petsitterId], references: [id])
-  petsitterId String      @map("petsitter_id")
-
-  @@map("petsitter_service_tags")
-}
-
 model Customer {
   id     String @id @default(uuid())
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique @map("user_id")
 
   activities Activity[]
   pets       Pet[]
-  favorites  Favorite[]
+  favourites Favourite[]
 
   @@map("customers")
 }
 
-model Favorite {
+model Favourite {
   id          String    @id @default(uuid())
   customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId  String    @map("customer_id")
   petsitter   Petsitter @relation(fields: [petsitterId], references: [id], onDelete: Cascade)
   petsitterId String    @map("petsitter_id")
 
-  @@map("favorites")
+  @@unique([customerId, petsitterId])
+  @@map("favourites")
 }
 
 model Admin {
   id     String @id @default(uuid())
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique @map("user_id")
 
   @@map("admins")
@@ -87,21 +86,21 @@ model Admin {
 
 model Activity {
   id            String        @id @default(uuid())
-  name          String
-  detail        String
+  title         String
+  detail        String?
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
   startDateTime DateTime      @map("start_date_time")
   endDateTime   DateTime      @map("end_date_time")
   pickupPoint   String        @map("pickup_point")
   state         ActivityState @default(PENDING)
-  price         Float
+  price         Float?
 
-  customer   Customer @relation(fields: [customerId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @map("customer_id")
 
-  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
-  petsitterId String    @map("petsitter_id")
+  petsitter   Petsitter? @relation(fields: [petsitterId], references: [id], onDelete: SetNull)
+  petsitterId String?    @map("petsitter_id")
 
   requests PetsitterRequest[]
 
@@ -109,8 +108,8 @@ model Activity {
 
   services ActivityService[]
 
-  payments   Payment[]
-  review     Review?
+  payments Payment[]
+  review   Review?
 
   invitation Invitation[]
 
@@ -122,46 +121,36 @@ model ActivityProgress {
   createdAt DateTime @default(now()) @map("created_at")
   content   String
 
-  activity   Activity @relation(fields: [activityId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
-  images ProgressImage[]
+  images String[]
 
   @@map("activity_progresses")
 }
 
-model ProgressImage {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now()) @map("created_at")
-
-  imageUrl           String           @map("image_url")
-  activityProgress   ActivityProgress @relation(fields: [activityProgressId], references: [id])
-  activityProgressId String           @map("activity_progress_id")
-
-  @@map("progress_images")
-}
-
 model Payment {
-  id            String   @id @default(uuid())
-  timestamp     DateTime @default(now())
+  id            String       @id @default(uuid())
+  timestamp     DateTime     @default(now())
   amount        Float
-  state         State    @default(PENDING)
-  transactionId String   @unique @map("transaction_id")
-  activity      Activity @relation(fields: [activityId], references: [id])
-  activityId    String   @unique @map("activity_id")
+  state         PaymentState @default(PENDING)
+  transactionId String       @unique @map("transaction_id")
+  activity      Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId    String       @unique @map("activity_id")
 
   @@map("payments")
 }
 
 model Qualification {
-  id             String @id @default(uuid())
-  email          String @unique @db.VarChar(50)
+  id             String   @id @default(uuid())
+  email          String   @unique @db.VarChar(50)
   password       String
-  firstname      String @db.VarChar(30)
-  lastname       String @db.VarChar(30)
-  phone          String @db.VarChar(20)
-  state          State  @default(PENDING)
-  certificateUrl String @map("certificate_url")
+  firstname      String   @db.VarChar(30)
+  lastname       String   @db.VarChar(30)
+  phone          String   @db.VarChar(20)
+  state          State    @default(PENDING)
+  certificateUrl String   @map("certificate_url")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("qualifications")
 }
@@ -193,7 +182,7 @@ model Pet {
 
 model AnimalType {
   id   String @id @default(uuid())
-  name String @db.VarChar(30)
+  name String @unique @db.VarChar(30)
 
   pets   Pet[]
   breeds Breed[]
@@ -203,7 +192,7 @@ model AnimalType {
 
 model Breed {
   id   String @id @default(uuid())
-  name String @db.VarChar(30)
+  name String @unique @db.VarChar(30)
 
   animalType   AnimalType? @relation(fields: [animalTypeId], references: [id], onDelete: SetNull)
   animalTypeId String?     @map("animal_type_id")
@@ -217,16 +206,29 @@ model PetsitterRequest {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
   state     State    @default(PENDING)
-  price     Float
+  price     Float?
   message   String?
 
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
-  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id], onDelete: Cascade)
   petsitterId String    @map("petsitter_id")
 
   @@map("petsitter_requests")
+}
+
+model Task {
+  id        String      @id @default(uuid())
+  createdAt DateTime    @default(now()) @map("created_at")
+  status    Boolean     @default(false)
+  type      ServiceType @map("service_type")
+  detail    String
+
+  activityServiceId String          @map("activity_service_id")
+  activityService   ActivityService @relation(fields: [activityServiceId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
 }
 
 model ActivityService {
@@ -235,14 +237,10 @@ model ActivityService {
   pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
   petId String @map("pet_id")
 
-  detail String
-
-  serviceType ServiceType @map("service_type")
-
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @map("activity_id")
 
-  status Boolean @default(false)
+  tasks Task[]
 
   @@map("activity_services")
 }
@@ -256,15 +254,18 @@ model Review {
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId String   @unique @map("activity_id")
 
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitterId String    @map("petsitter_id")
+
   @@map("reviews")
 }
 
 model Report {
-  id          String        @id @default(uuid())
-  createdAt   DateTime      @default(now()) @map("created_at")
-  type        ReportType
-  content     String
-  reportImage ReportImage[]
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now()) @map("created_at")
+  type         ReportType
+  content      String
+  reportImages String[]   @map("report_images")
 
   reporter   User   @relation("reporter", fields: [reporterId], references: [id])
   reporterId String @map("reporter_id")
@@ -273,16 +274,6 @@ model Report {
   reportedId String @map("reported_id")
 
   @@map("reports")
-}
-
-model ReportImage {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now()) @map("created_at")
-  imageUrl  String   @map("image_url")
-  report    Report   @relation(fields: [reportId], references: [id])
-  reportId  String   @map("report_id")
-
-  @@map("report_images")
 }
 
 model Invitation {
@@ -297,6 +288,18 @@ model Invitation {
   link String
 
   @@map("invitations")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  title     String
+  content   String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@map("notifications")
 }
 
 enum ReportType {
@@ -333,6 +336,14 @@ enum AccountState {
   @@map("account_states")
 }
 
+enum PaymentState {
+  PENDING
+  SUCCEEDED
+  FAILED
+
+  @@map("payment_states")
+}
+
 enum ActivityState {
   PENDING // Petsitter: Requested, Customer: Unassigned
   REJECTED // for petsitter after customer rejected
@@ -354,9 +365,12 @@ enum Gender {
 }
 
 enum ServiceType {
-  PET_WALKING
-  PET_BOARDING
-  PET_GROOMING
+  FEEDING
+  GROOMING
+  EXERCISING
+  TRAINING
+  ADMINISTERING_MEDICATION
+  RELAXATION
 
   @@map("service_types")
 }
