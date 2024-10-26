@@ -1455,6 +1455,10 @@ export class ActivityService {
       throw new BadRequestException(`You are not authorized to update task status for this activity.`);
     }
 
+    if (activity.state !== ActivityState.IN_PROGRESS) {
+      throw new BadRequestException(`You can only update task status for an activity in the IN_PROGRESS state.`);
+    }
+
     if (task.status === status) {
       throw new BadRequestException(`Task status is already ${status ? 'completed' : 'incomplete'}`);
     }

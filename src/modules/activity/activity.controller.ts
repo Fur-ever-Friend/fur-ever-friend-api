@@ -173,7 +173,7 @@ export class ActivityController {
   @Roles(Role.CUSTOMER)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':id') // PUT /activities/:id
-  async updateActivityState(@Param('id') { id }: Id, @Body() { state }: UpdateActivityStateDto, @CurrentUser() user: User) {
+  async updateActivityState(@Param() { id }: Id, @Body() { state }: UpdateActivityStateDto, @CurrentUser() user: User) {
     const result = await this.activityService.updateActivityState(id, state);
     return {
       statusCode: HttpStatus.OK,
