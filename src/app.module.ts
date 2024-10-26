@@ -52,6 +52,7 @@ import {
     InvitationModule,
     NotificationModule,
     FavouriteModule,
+    ActivityModule,
   ],
 })
 export class AppModule { }
