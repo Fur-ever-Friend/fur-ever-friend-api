@@ -209,27 +209,15 @@ export class ActivityController {
     }
   }
 
-  @Roles(Role.PETSITTER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('review')
   @HttpCode(HttpStatus.CREATED)
   async createReview(@CurrentUser() user: User, @Body() data: CreateReviewDto) {
-    const result = await this.activityService.createReview(data, user["petsitter"]["id"]);
+    const result = await this.activityService.createReview(data, user["customer"]["id"]);
     return {
       statusCode: HttpStatus.CREATED,
       message: "Review created successfully.",
-      data: result,
-    }
-  }
-
-  @Roles(Role.ADMIN, Role.CUSTOMER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(':id/review')
-  async getReviewByActivityId(@Param() { id }: Id) {
-    const result = await this.activityService.getReviewByActivityId(id);
-    return {
-      statusCode: HttpStatus.OK,
-      message: "Review retrieved successfully.",
       data: result,
     }
   }
@@ -246,5 +234,4 @@ export class ActivityController {
       data: result,
     }
   }
-
 }
