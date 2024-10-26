@@ -13,20 +13,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(email: string, password: string): Promise<Partial<User>> {
-        try {
-            const authValidate = LoginSchema.parse({ email, password });
-            const user = await this.authService.validateLogin(authValidate.email, authValidate.password);
-            return user;
-        } catch (err: unknown) {
-            if (err instanceof HttpException) {
-                console.log(`Error: ${err.message}`);
-                throw err;
-            } else if (err instanceof Error) {
-                console.log(`Error: ${err.message}`);
-            }
-            throw new BadRequestException("Invalid email or password.");
-
-        }
+        return this.authService.validateLogin(email, password);
     }
 
 }

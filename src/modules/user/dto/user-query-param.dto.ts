@@ -38,14 +38,14 @@ export class UserQueryDto {
     sortOrder?: SortOrder;
 
     @IsOptional()
-    @Type(() => Number)
     @IsInt()
+    @Type(() => Number)
     @Min(1)
     page?: number;
 
     @IsOptional()
-    @Type(() => Number)
     @IsInt()
+    @Type(() => Number)
     @Min(1)
     limit?: number;
 }

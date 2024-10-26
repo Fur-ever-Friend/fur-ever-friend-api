@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -10,36 +10,44 @@ export class AnimalTypeService {
     }
 
     async getAnimalTypeById(id: string) {
-        return this.prismaService.animalType.findUnique({
+        const animalType = await this.prismaService.animalType.findUnique({
             where: {
                 id: id
             }
         });
+        if (!animalType) {
+            throw new NotFoundException("Animal type not found");
+        }
+        return animalType;
     }
 
     async getAnimalTypeByName(name: string) {
-        return this.prismaService.animalType.findFirst({
+        const animalType = await this.prismaService.animalType.findUnique({
             where: {
-                name: name.toUpperCase()
-            }
+                name,
+            },
         });
+        if (!animalType) {
+            throw new NotFoundException("Animal type not found");
+        }
+        return animalType;
     }
 
     async addAnimalType(name: string) {
         return this.prismaService.animalType.create({
             data: {
-                name
-            }
+                name,
+            },
         });
     }
 
     async updateAnimalType(id: string, name: string) {
         return this.prismaService.animalType.update({
             where: {
-                id
+                id,
             },
             data: {
-                name
+                name,
             }
         });
     }

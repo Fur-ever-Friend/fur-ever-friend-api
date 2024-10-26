@@ -8,14 +8,12 @@ export class LocalAuthGuard extends AuthGuard('local') {
     canActivate(context: any) {
         const request = context.switchToHttp().getRequest();
 
-        const authValidation = LoginSchema.safeParse({
+        const authValidation = LoginSchema.parse({
             email: request.body.email,
             password: request.body.password
         })
 
-        if (!authValidation.success) {
-            throw new BadRequestException(authValidation.error.errors);
-        }
+        console.log("authValidation", authValidation);
 
         return super.canActivate(context);
     }
