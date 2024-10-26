@@ -1,4 +1,3 @@
-
 model Customer {
   id     String @id @default(uuid())
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -7,6 +6,7 @@ model Customer {
   activities Activity[]
   pets       Pet[]
   favourites Favourite[]
+  reviews    Review[]
 
   @@map("customers")
 }
@@ -22,18 +22,17 @@ model Favourite {
   @@map("favourites")
 }
 
-
 model Review {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
   content   String
   rating    Int
 
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  activityId String   @unique @map("activity_id")
-
   petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
   petsitterId String    @map("petsitter_id")
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String   @map("customer_id")
 
   @@map("reviews")
 }
