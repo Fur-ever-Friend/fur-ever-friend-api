@@ -302,7 +302,6 @@ export class UserService {
                             location: true,
                             serviceTags: true,
                             coverImages: true,
-                            requests: true,
                             activities: true,
                             reviews: {
                                 select: {
@@ -310,7 +309,20 @@ export class UserService {
                                     createdAt: true,
                                     content: true,
                                     rating: true,
-                                    activityId: true,
+                                    customer: {
+                                        select: {
+                                            id: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                         }
@@ -421,14 +433,26 @@ export class UserService {
                             quote: true,
                             rating: true,
                             serviceTags: true,
-                            requests: true,
                             reviews: {
                                 select: {
                                     id: true,
                                     content: true,
                                     rating: true,
-                                    activityId: true,
                                     createdAt: true,
+                                    customer: {
+                                        select: {
+                                            id: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             invitations: true,
@@ -639,8 +663,6 @@ export class UserService {
                             location: true,
                             serviceTags: true,
                             coverImages: true,
-                            requests: true,
-                            activities: true,
                         }
                     }
                 }
@@ -653,153 +675,153 @@ export class UserService {
     }
 
     async updateUser(userId: string, data: UpdateUserDto): Promise<Partial<User>> {
-        try {
-            const { role, ...userData } = data
-            const { password, ...otherField } = allowFieldUpdate(['password', 'firstname', 'lastname', 'phone', 'avatar'], userData);
-            let hashedPassword: string | undefined = undefined;
-            if (password) {
-                hashedPassword = await hashPassword(password);
-            }
-
-            const { role: userRole } = await this.prismaService.user.findUniqueOrThrow({
-                where: { id: userId },
-                select: { role: true },
-            });
-
-            if (userRole !== role) throw new ForbiddenException('You do not have permission to update this user');
-
-            const user = await this.prismaService.user.update({
-                where: {
-                    id: userId
-                },
-                data: {
-                    ...otherField,
-                    password: hashedPassword,
-                },
-                include: {
-                    customer: userRole === Role.CUSTOMER,
-                },
-            });
-
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.updateUser', 'user');
+        const { role, ...userData } = data
+        const { password, ...otherField } = allowFieldUpdate(['password', 'firstname', 'lastname', 'phone', 'avatar'], userData);
+        let hashedPassword: string | undefined = undefined;
+        if (password) {
+            hashedPassword = await hashPassword(password);
         }
+
+        const { role: userRole } = await this.prismaService.user.findUnique({
+            where: { id: userId },
+            select: { role: true },
+        });
+
+        if (!userRole) throw new NotFoundException('User not found');
+
+        if (userRole !== role) throw new ForbiddenException('You do not have permission to update this user');
+
+        const user = await this.prismaService.user.update({
+            where: {
+                id: userId
+            },
+            data: {
+                ...otherField,
+                password: hashedPassword,
+            },
+            include: {
+                customer: userRole === Role.CUSTOMER,
+            },
+        });
+
+        return user;
     }
 
     async updateCustomer(userId: string, data: UpdateCustomerDto): Promise<Partial<User>> {
-        try {
-            const { password, ...otherField } = allowFieldUpdate(['password', 'firstname', 'lastname', 'phone', 'avatar'], data);
-            let hashedPassword: string | undefined = undefined;
-            if (password) {
-                hashedPassword = await hashPassword(password);
-            }
-
-            const user = await this.prismaService.user.update({
-                where: {
-                    id: userId,
-                },
-                data: {
-                    ...otherField,
-                    password: hashedPassword,
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    phone: true,
-                    role: true,
-                    avatar: true,
-                    accountStatus: true,
-                    customer: {
-                        select: {
-                            id: true,
-                            activities: true,
-                            pets: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    age: true,
-                                    gender: true,
-                                    allergy: true,
-                                    imageUrl: true,
-                                    personality: true,
-                                    animalType: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        }
-                                    },
-                                    breed: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        }
-                                    },
-                                }
-                            }
-                        },
-                    },
-                }
-            });
-
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.updateCustomer', 'customer');
+        const { password, ...otherField } = allowFieldUpdate(['password', 'firstname', 'lastname', 'phone', 'avatar'], data);
+        let hashedPassword: string | undefined = undefined;
+        if (password) {
+            hashedPassword = await hashPassword(password);
         }
+
+        const user = await this.prismaService.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                ...otherField,
+                password: hashedPassword,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                phone: true,
+                role: true,
+                avatar: true,
+                accountStatus: true,
+                customer: {
+                    select: {
+                        id: true,
+                        activities: true,
+                        pets: {
+                            select: {
+                                id: true,
+                                name: true,
+                                age: true,
+                                gender: true,
+                                allergy: true,
+                                imageUrl: true,
+                                personality: true,
+                                animalType: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                    }
+                                },
+                                breed: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        animalType: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                            }
+                                        }
+                                    }
+                                },
+                            }
+                        }
+                    },
+                },
+            }
+        });
+
+        return user;
     }
 
     async updateRefreshToken(userId: string, refreshToken: string | null): Promise<void> {
-        try {
-            await this.prismaService.user.update({
-                where: {
-                    id: userId
-                },
-                data: {
-                    refreshToken
-                }
-            });
-        } catch (err: unknown) {
-            handleError(err, 'userService.updateRefreshToken', 'refreshToken');
-        }
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                id: userId
+            },
+            select: { role: true }
+        });
+
+        if (!user) throw new NotFoundException("User not found");
+
+        await this.prismaService.user.update({
+            where: {
+                id: userId
+            },
+            data: {
+                refreshToken
+            }
+        });
     }
 
     async setUserState(userId: string, state: AccountState): Promise<void> {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: { id: userId },
-                select: { role: true }
-            });
+        const user = await this.prismaService.user.findUnique({
+            where: { id: userId },
+            select: { role: true }
+        });
 
-            if (user.role === "ADMIN") throw new BadRequestException("Cannot change state of admin account");
+        if (!user) throw new NotFoundException("User not found");
 
-            await this.prismaService.user.update({
-                where: { id: userId },
-                data: {
-                    accountStatus: state
-                }
-            });
-        } catch (err: unknown) {
-            handleError(err, 'userService.setUserState', 'user');
-        }
+        if (user.role === "ADMIN") throw new BadRequestException("Cannot change state of admin account");
+
+        await this.prismaService.user.update({
+            where: { id: userId },
+            data: {
+                accountStatus: state
+            }
+        });
     }
 
     async deleteUser(userId: string, isAdmin: boolean): Promise<void> {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: { id: userId },
-                select: { role: true }
-            });
+        const user = await this.prismaService.user.findUnique({
+            where: { id: userId },
+            select: { role: true }
+        });
 
-            if (isAdmin && user.role === "ADMIN") throw new BadRequestException("Cannot delete admin account");
+        if (!user) throw new NotFoundException("User not found");
 
-            await this.prismaService.user.delete({
-                where: { id: userId }
-            });
-        } catch (err: unknown) {
-            handleError(err, 'userService.deleteUser', 'user');
-        }
+        if (isAdmin && user.role === "ADMIN") throw new BadRequestException("Cannot delete admin account");
+
+        await this.prismaService.user.delete({
+            where: { id: userId }
+        });
     }
-
 }

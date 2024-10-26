@@ -20,6 +20,7 @@ import {
   FavouriteModule,
   InvitationModule,
   NotificationModule,
+  ReviewModule,
 } from './modules';
 
 @Module({
@@ -53,6 +54,7 @@ import {
     NotificationModule,
     FavouriteModule,
     ActivityModule,
+    ReviewModule,
   ],
 })
 export class AppModule { }
