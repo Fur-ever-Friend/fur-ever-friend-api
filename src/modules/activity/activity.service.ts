@@ -12,13 +12,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AnimalTypeService } from '../animal-type/animal-type.service';
 import { GLOBAL_CONSTS, validateAndConvertDateTimes, } from '@/common/utils';
-import { request } from 'http';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ActivityService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly animalTypeService: AnimalTypeService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   @Cron('*/16 * * * * *', {
@@ -493,8 +494,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                imageUrl: true,
+                gender: true,
+                personality: true,
+                allergy: true,
+                weight: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                }
               },
             },
             tasks: {
@@ -523,6 +547,14 @@ export class ActivityService {
             id: true,
             content: true,
             images: true,
+            createdAt: true,
+          },
+        },
+        review: {
+          select: {
+            id: true,
+            content: true,
+            rating: true,
             createdAt: true,
           },
         },
@@ -600,8 +632,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    }
+                  }
+                },
                 age: true,
+                allergy: true,
+                gender: true,
+                imageUrl: true,
+                personality: true,
+                weight: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
             tasks: {
@@ -655,6 +710,48 @@ export class ActivityService {
             createdAt: true,
           },
         },
+        review: {
+          select: {
+            id: true,
+            content: true,
+            rating: true,
+            createdAt: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            transactionId: true,
+            state: true,
+            timestamp: true,
+          }
+        },
+        requests: {
+          select: {
+            id: true,
+            createdAt: true,
+            message: true,
+            price: true,
+            state: true,
+            petsitter: {
+              select: {
+                id: true,
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    avatar: true,
+                    phone: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          }
+        },
       }
     });
 
@@ -664,7 +761,9 @@ export class ActivityService {
   async getActivitiesByPetsitter(id: string, activityPetsitterQueryDto: ActivityPetsitterQueryDto) {
     const petsitter = await this.prismaService.petsitter.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+      },
     });
 
     if (!petsitter) {
@@ -706,8 +805,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                allergy: true,
+                weight: true,
+                imageUrl: true,
+                gender: true,
+                otherDetail: true,
+                personality: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             tasks: {
@@ -742,6 +864,14 @@ export class ActivityService {
             id: true,
             content: true,
             images: true,
+            createdAt: true,
+          },
+        },
+        review: {
+          select: {
+            id: true,
+            content: true,
+            rating: true,
             createdAt: true,
           },
         },
@@ -816,8 +946,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                imageUrl: true,
+                gender: true,
+                allergy: true,
+                weight: true,
+                personality: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             tasks: {
@@ -870,6 +1023,15 @@ export class ActivityService {
             content: true,
             rating: true,
             createdAt: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            transactionId: true,
+            state: true,
+            timestamp: true,
           },
         },
       }
@@ -970,8 +1132,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                weight: true,
+                gender: true,
+                imageUrl: true,
+                personality: true,
+                allergy: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                }
               },
             },
             tasks: {
@@ -1015,6 +1200,14 @@ export class ActivityService {
                 role: true,
               },
             },
+          },
+        },
+        progresses: {
+          select: {
+            id: true,
+            content: true,
+            images: true,
+            createdAt: true,
           },
         },
       },
