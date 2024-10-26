@@ -2,8 +2,6 @@ export * from './request/create-activity.dto';
 
 export * from './request/create-review.dto';
 
-export * from './request/create-report.dto';
-
 export * from './request/create-activity-progress.dto';
 
 export * from './request/activity-query.dto';

@@ -1,7 +1,6 @@
-import { IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
+import { IsUUID } from 'class-validator';
 
 export class PaymentInfoDto {
-  @IsNotEmpty()
-  @IsUUID('4')
+  @IsUUID('4', { message: 'Activity ID must be a valid UUID' })
   activityId: string;
 }
