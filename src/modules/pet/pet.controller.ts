@@ -64,21 +64,19 @@ export class PetController {
         @Body("json") json: string,
         @UploadedFile() file: Express.Multer.File
     ) {
-        try {
-            const jsonParse = JSON.parse(json);
-            const validateData = CreatePetSchema.safeParse(jsonParse);
-            if (!validateData.success) throw new BadRequestException("Invalid Field");
-            const data = validateData.data satisfies CreatePetDto;
-            if (file) data.imageUrl = file.filename;
-            const result = await this.petService.createPet(data, user["customer"]["id"]);
-            return {
-                statusCode: HttpStatus.CREATED,
-                message: "Pet created successfully.",
-                data: result,
-            }
-        } catch (err: unknown) {
-            console.log(err);
-            handleError(err, "createPet", "pet");
+        const jsonParse = JSON.parse(json);
+        const createPetDto = CreatePetSchema.parse(jsonParse);
+        const data = createPetDto satisfies CreatePetDto;
+        if (!file) {
+            throw new BadRequestException("Image is required.");
+        }
+        data.imageUrl = file.filename;
+
+        const result = await this.petService.createPet(data, user["customer"]["id"]);
+        return {
+            statusCode: HttpStatus.CREATED,
+            message: "Pet created successfully.",
+            data: result,
         }
     }
 
