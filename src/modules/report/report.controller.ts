@@ -29,8 +29,9 @@ export class ReportController {
     private readonly reportService: ReportService,
   ) { }
 
+  @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FilesInterceptor('reportImages', 5, {
       storage: diskStorage({
@@ -86,7 +87,8 @@ export class ReportController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const result = await this.reportService.findOne(id);

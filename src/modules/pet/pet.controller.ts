@@ -4,6 +4,7 @@ import {
     Controller,
     Delete,
     Get,
+    HttpCode,
     HttpStatus,
     Param,
     Patch,
@@ -18,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { CreatePetDto, CreatePetSchema } from './dto/create-pet.dto';
 import { UpdatePetDto, UpdatePetSchema } from './dto/update-pet.dto';
-import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
+import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils/check-filename-encoding';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -33,6 +34,7 @@ export class PetController {
     @Roles(Role.CUSTOMER)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Post()
+    @HttpCode(HttpStatus.CREATED)
     @UseInterceptors(
         FileInterceptor('file', {
             storage: diskStorage({
@@ -67,7 +69,7 @@ export class PetController {
             const validateData = CreatePetSchema.safeParse(jsonParse);
             if (!validateData.success) throw new BadRequestException("Invalid Field");
             const data = validateData.data satisfies CreatePetDto;
-            data.imageUrl = file.filename;
+            if (file) data.imageUrl = file.filename;
             const result = await this.petService.createPet(data, user["customer"]["id"]);
             return {
                 statusCode: HttpStatus.CREATED,
@@ -75,7 +77,8 @@ export class PetController {
                 data: result,
             }
         } catch (err: unknown) {
-            handleError(err, "createPet");
+            console.log(err);
+            handleError(err, "createPet", "pet");
         }
     }
 

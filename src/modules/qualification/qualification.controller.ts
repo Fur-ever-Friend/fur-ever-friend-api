@@ -4,7 +4,7 @@ import { QualificationDto, QualificationSchema, UpdateQualificationStateDto } fr
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from "uuid";
-import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils/checkFilenameEncoding';
+import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils/check-filename-encoding';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';

@@ -1,58 +1,69 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { ZodError } from "zod";
+import { Response } from "express";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
-        const response = ctx.getResponse();
-        const request = ctx.getRequest();
-        const status =
-            exception instanceof HttpException
-                ? exception.getStatus()
-                : HttpStatus.INTERNAL_SERVER_ERROR;
+        const response = ctx.getResponse<Response>();
+        let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+        let message = ['Something went wrong'];
+        let error = 'Internal server error';
 
-        let message: string;
-
-        if (exception instanceof PrismaClientKnownRequestError) {
-            message = this.handlePrismaError(exception);
+        if (exception instanceof HttpException) {
+            const res = exception.getResponse() as { message: string; statusCode: number; error: string; };
+            statusCode = res.statusCode;
+            error = res.error;
+            message = [res.message];
+        } else if (exception instanceof PrismaClientKnownRequestError) {
+            console.error(`[PrismaError]: ${exception.message}`);
+            switch (exception.code) {
+                case 'P2002':
+                    message = ['A record with this field already exists.'];
+                    statusCode = HttpStatus.BAD_REQUEST;
+                    error = 'Bad Request';
+                    break;
+                case 'P2003':
+                    message = ['Foreign key constraint failed.'];
+                    statusCode = HttpStatus.BAD_REQUEST;
+                    error = 'Bad Request';
+                    break;
+                case 'P2005':
+                    message = ['Invalid data format.'];
+                    statusCode = HttpStatus.BAD_REQUEST;
+                    error = 'Bad Request';
+                    break;
+                case 'P2025':
+                    message = ['Record not found.'];
+                    statusCode = HttpStatus.NOT_FOUND;
+                    error = 'Not Found';
+                    break;
+                default:
+                    break;
+            }
         } else if (exception instanceof ZodError) {
-            message = this.handleZodError(exception);
-        } else if (exception instanceof HttpException) {
-            message = exception.message;
+            message = exception.errors.map(e => e.message);
+            statusCode = HttpStatus.BAD_REQUEST;
+            error = 'Bad Request';
         } else if (exception instanceof SyntaxError) {
-            message = 'Invalid JSON format';
+            message = [exception.message];
+            statusCode = HttpStatus.BAD_REQUEST;
+            error = 'Bad Request';
         } else if (exception instanceof Error) {
-            message = exception.message;
+            message = [exception.message];
+            statusCode = HttpStatus.BAD_REQUEST;
+            error = 'Bad Request';
         } else {
-            message = 'An unexpected error occurred.';
+            console.log('unknown exception', exception);
         }
 
-        response.status(status).json({
-            statusCode: status,
+        response.status(statusCode).json({
+            statusCode,
+            error,
             message,
         });
     }
 
-    private handlePrismaError(err: PrismaClientKnownRequestError): string {
-        switch (err.code) {
-            case 'P2002':
-                return 'A record with this field already exists.';
-            case 'P2003':
-                return 'Foreign key constraint failed.';
-            case 'P2005':
-                return 'Invalid data format.';
-            case 'P2025':
-                return 'Record not found.';
-            default:
-                console.error(`[PrismaError]: ${err.message}`);
-                return 'Database error occurred.';
-        }
-    }
-
-    private handleZodError(err: ZodError): string {
-        console.error(`[ZodError]:`, err.errors);
-        return `Validation failed: ${err.errors.map(e => e.message).join(', ')}`;
-    }
 }

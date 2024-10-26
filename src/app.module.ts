@@ -1,3 +1,4 @@
+import { ScheduleModule } from '@nestjs/schedule';
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -16,6 +17,9 @@ import {
   BreedModule,
   AnimalTypeModule,
   ReportModule,
+  FavouriteModule,
+  InvitationModule,
+  NotificationModule,
 } from './modules';
 
 @Module({
@@ -32,6 +36,7 @@ import {
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/attachments/',
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     PetSitterModule,
@@ -43,7 +48,10 @@ import {
     BreedModule,
     AnimalTypeModule,
     CustomerModule,
-    ReportModule
+    ReportModule,
+    InvitationModule,
+    NotificationModule,
+    FavouriteModule,
   ],
 })
 export class AppModule { }

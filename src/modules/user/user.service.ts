@@ -1,6 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AccountState, Prisma, Role, State, User } from '@prisma/client';
+import { AccountState, Customer, Petsitter, Prisma, Role, State, User } from '@prisma/client';
 import { handleError, hashPassword, allowFieldUpdate } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto, CreateUserDto, SearchType, SortBy, SortOrder, UpdateCustomerDto, UpdatePetsitterDto, UpdateUserDto, UserQueryDto } from './dto';
@@ -141,7 +141,7 @@ export class UserService {
                 currentPage: page,
             };
         } catch (err: unknown) {
-            handleError(err, 'userService.GetAllUsers');
+            handleError(err, 'userService.GetAllUsers', 'users');
         }
     }
 
@@ -217,7 +217,7 @@ export class UserService {
             }
             return user;
         } catch (err: unknown) {
-            handleError(err, 'userService.getUserByIdWithoutCredential');
+            handleError(err, 'userService.getUserByIdWithoutCredential', 'user');
         }
     }
 
@@ -259,8 +259,37 @@ export class UserService {
                         select: {
                             id: true,
                             activities: true,
-                            pets: true
-                        }
+                            pets: true,
+                            favourites: {
+                                select: {
+                                    id: true,
+                                    petsitter: {
+                                        select: {
+                                            id: true,
+                                            about: true,
+                                            experience: true,
+                                            quote: true,
+                                            rating: true,
+                                            location: true,
+                                            serviceTags: true,
+                                            coverImages: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                    phone: true,
+                                                    role: true,
+                                                    accountStatus: true,
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     },
                     petsitter: {
                         select: {
@@ -275,6 +304,15 @@ export class UserService {
                             coverImages: true,
                             requests: true,
                             activities: true,
+                            reviews: {
+                                select: {
+                                    id: true,
+                                    createdAt: true,
+                                    content: true,
+                                    rating: true,
+                                    activityId: true,
+                                }
+                            },
                         }
                     }
                 },
@@ -291,7 +329,7 @@ export class UserService {
 
             return user;
         } catch (err: unknown) {
-            handleError(err, 'userService.getUserByIdWithDetails');
+            handleError(err, 'userService.getUserByIdWithDetails', 'user');
         }
     }
 
@@ -299,7 +337,7 @@ export class UserService {
         try {
             const user = await this.prismaService.user.findUniqueOrThrow({
                 where: {
-                    email
+                    email,
                 },
                 select: {
                     id: true,
@@ -310,7 +348,6 @@ export class UserService {
                     phone: true,
                     role: true,
                     avatar: true,
-                    createdAt: true,
                     accountStatus: true,
                     customer: {
                         select: {
@@ -327,18 +364,47 @@ export class UserService {
                                     weight: true,
                                     personality: true,
                                     otherDetail: true,
-                                    animalType: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        }
-                                    },
                                     breed: {
                                         select: {
                                             id: true,
                                             name: true,
+                                            animalType: {
+                                                select: {
+                                                    id: true,
+                                                    name: true,
+                                                }
+                                            }
                                         }
                                     },
+                                }
+                            },
+                            favourites: {
+                                select: {
+                                    id: true,
+                                    petsitter: {
+                                        select: {
+                                            id: true,
+                                            about: true,
+                                            experience: true,
+                                            quote: true,
+                                            rating: true,
+                                            location: true,
+                                            serviceTags: true,
+                                            coverImages: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                    phone: true,
+                                                    role: true,
+                                                    accountStatus: true,
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -356,6 +422,16 @@ export class UserService {
                             rating: true,
                             serviceTags: true,
                             requests: true,
+                            reviews: {
+                                select: {
+                                    id: true,
+                                    content: true,
+                                    rating: true,
+                                    activityId: true,
+                                    createdAt: true,
+                                }
+                            },
+                            invitations: true,
                         }
                     },
                 }
@@ -368,12 +444,66 @@ export class UserService {
                 case Role.PETSITTER:
                     delete user.customer;
                     break;
+                case Role.ADMIN:
+                    delete user.customer;
+                    delete user.petsitter;
+                    break;
             }
 
             return user;
         } catch (err: unknown) {
-            handleError(err, 'userService.getUserByEmail');
+            handleError(err, 'userService.getUserByEmail', 'user');
         }
+    }
+
+    async getUserByCustomerId(customerId: string): Promise<Partial<Customer>> {
+        const user = await this.prismaService.customer.findUnique({
+            where: { id: customerId },
+            select: {
+                id: true,
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstname: true,
+                        lastname: true,
+                        phone: true,
+                        role: true,
+                        avatar: true,
+                        accountStatus: true,
+                    },
+                },
+            },
+        })
+
+        if (!user) throw new NotFoundException("Customer not found");
+
+        return user;
+
+    }
+
+    async getUserByPetsitterId(petsitterId: string): Promise<Partial<Petsitter>> {
+        const user = await this.prismaService.petsitter.findUnique({
+            where: { id: petsitterId },
+            select: {
+                id: true,
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstname: true,
+                        lastname: true,
+                        phone: true,
+                        role: true,
+                        avatar: true,
+                        accountStatus: true,
+                    }
+                }
+            }
+        });
+
+        if (!user) throw new NotFoundException("Petsitter not found");
+        return user;
     }
 
     async createUser({ password, role, ...rest }: CreateUserDto): Promise<Partial<User>> {
@@ -415,7 +545,7 @@ export class UserService {
 
             return user;
         } catch (err: unknown) {
-            handleError(err, 'userService.createUser');
+            handleError(err, 'userService.createUser', 'user');
         }
     }
 
@@ -426,7 +556,7 @@ export class UserService {
 
             const createPetsitter = {
                 ...rest,
-                role: "PETSITTER"
+                role: Role.PETSITTER,
             } satisfies CreatePetsitterDto;
 
             const user = await this.prismaService.$transaction(async (prisma) => {
@@ -457,7 +587,7 @@ export class UserService {
 
             return user;
         } catch (err) {
-            handleError(err, 'userService.createPetsitter');
+            handleError(err, 'userService.createPetsitter', 'user');
         }
     }
 
@@ -469,15 +599,14 @@ export class UserService {
             if (password) {
                 hashedPassword = await hashPassword(password);
             }
-            let user: Partial<User>;
-            user = await this.prismaService.user.findUniqueOrThrow({
+            const { role: userRole } = await this.prismaService.user.findUniqueOrThrow({
                 where: { id: userId },
                 select: { role: true },
             });
 
-            if (user.role !== 'PETSITTER') throw new ForbiddenException('You do not have permission to update this user');
+            if (userRole !== 'PETSITTER') throw new ForbiddenException('You do not have permission to update this user');
 
-            user = await this.prismaService.user.update({
+            const user = await this.prismaService.user.update({
                 where: {
                     id: userId
                 },
@@ -519,7 +648,7 @@ export class UserService {
 
             return user;
         } catch (err) {
-            handleError(err, 'userService.updatePetsitter');
+            handleError(err, 'userService.updatePetsitter', 'user');
         }
     }
 
@@ -532,16 +661,14 @@ export class UserService {
                 hashedPassword = await hashPassword(password);
             }
 
-            let user: Partial<User>;
-
-            user = await this.prismaService.user.findUniqueOrThrow({
+            const { role: userRole } = await this.prismaService.user.findUniqueOrThrow({
                 where: { id: userId },
                 select: { role: true },
             });
 
-            if (user.role !== role) throw new ForbiddenException('You do not have permission to update this user');
+            if (userRole !== role) throw new ForbiddenException('You do not have permission to update this user');
 
-            user = await this.prismaService.user.update({
+            const user = await this.prismaService.user.update({
                 where: {
                     id: userId
                 },
@@ -550,17 +677,13 @@ export class UserService {
                     password: hashedPassword,
                 },
                 include: {
-                    customer: role === Role.CUSTOMER,
+                    customer: userRole === Role.CUSTOMER,
                 },
             });
 
             return user;
-        } catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                throw new BadRequestException('Email already exists');
-            }
-
-            throw error;
+        } catch (err: unknown) {
+            handleError(err, 'userService.updateUser', 'user');
         }
     }
 
@@ -623,7 +746,7 @@ export class UserService {
 
             return user;
         } catch (err: unknown) {
-            handleError(err, 'userService.updateCustomer');
+            handleError(err, 'userService.updateCustomer', 'customer');
         }
     }
 
@@ -638,7 +761,7 @@ export class UserService {
                 }
             });
         } catch (err: unknown) {
-            handleError(err, 'userService.updateRefreshToken');
+            handleError(err, 'userService.updateRefreshToken', 'refreshToken');
         }
     }
 
@@ -658,7 +781,7 @@ export class UserService {
                 }
             });
         } catch (err: unknown) {
-            handleError(err, 'userService.setUserState');
+            handleError(err, 'userService.setUserState', 'user');
         }
     }
 
@@ -675,7 +798,7 @@ export class UserService {
                 where: { id: userId }
             });
         } catch (err: unknown) {
-            handleError(err, 'userService.deleteUser');
+            handleError(err, 'userService.deleteUser', 'user');
         }
     }
 
