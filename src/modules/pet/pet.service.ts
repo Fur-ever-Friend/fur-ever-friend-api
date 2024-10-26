@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Pet, Prisma } from '@prisma/client';
 import { CreatePetDto } from './dto/create-pet.dto';
@@ -32,7 +32,13 @@ export class PetService {
                     select: {
                         id: true,
                         name: true,
-                    }
+                        animalType: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
+                    },
                 },
                 animalType: {
                     select: {
@@ -77,6 +83,12 @@ export class PetService {
                     select: {
                         id: true,
                         name: true,
+                        animalType: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
                     }
                 },
                 animalType: {
@@ -128,6 +140,12 @@ export class PetService {
                     select: {
                         id: true,
                         name: true,
+                        animalType: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
                     }
                 },
                 owner: {
@@ -178,7 +196,6 @@ export class PetService {
                     personality: true,
                     imageUrl: true,
                     otherDetail: true,
-                    services: true,
                     owner: {
                         select: {
                             id: true,
@@ -203,13 +220,19 @@ export class PetService {
                         select: {
                             id: true,
                             name: true,
+                            animalType: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                }
+                            },
                         }
                     }
                 }
             });
             return pet;
         } catch (err: unknown) {
-            handleError(err, 'petService.createPet');
+            handleError(err, 'petService.createPet', 'pet');
         }
     }
 
@@ -217,17 +240,17 @@ export class PetService {
         const animalTypePromise = data.animalTypeId
             ? this.animalTypeService.getAnimalTypeById(data.animalTypeId)
             : null;
-    
+
         const breedPromise = data.breedId
             ? this.breedService.getBreedById(data.breedId)
             : null;
-    
+
         const [animalType, breed] = await Promise.all([animalTypePromise, breedPromise]);
-    
+
         if (data.animalTypeId && !animalType) {
             throw new NotFoundException("Animal type not found");
         }
-    
+
         if (data.breedId) {
             if (!breed) {
                 throw new NotFoundException("Breed not found");
@@ -236,7 +259,7 @@ export class PetService {
                 throw new NotFoundException("Breed does not match animal type");
             }
         }
-    
+
         try {
             const pet = await this.prismaService.pet.update({
                 where: { id },
@@ -244,7 +267,16 @@ export class PetService {
                 select: {
                     id: true,
                     name: true,
-                    breed: { select: { id: true, name: true } },
+                    breed: {
+                        select: {
+                            id: true, name: true, animalType: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                        }
+                    },
                     animalType: { select: { id: true, name: true } },
                     imageUrl: true,
                     age: true,
@@ -253,7 +285,6 @@ export class PetService {
                     weight: true,
                     personality: true,
                     otherDetail: true,
-                    services: true,
                     owner: {
                         select: {
                             id: true,
@@ -270,19 +301,16 @@ export class PetService {
                     },
                 },
             });
-    
+
             return pet;
         } catch (err: unknown) {
-            handleError(err, 'petService.updatePet');
+            handleError(err, 'petService.updatePet', 'pet');
         }
     }
-    
+
 
     async deletePet(id: string, ownerId: string): Promise<void> {
         try {
-            if (!ownerId) throw new InternalServerErrorException("Owner Id is required");
-            if (!id) throw new InternalServerErrorException("Pet Id is required");
-
             await this.prismaService.pet.delete({
                 where: {
                     id,
@@ -290,7 +318,7 @@ export class PetService {
                 }
             })
         } catch (err: unknown) {
-            handleError(err, 'petService.deletePet');
+            handleError(err, 'petService.deletePet', 'pet');
         }
     }
 
@@ -302,7 +330,7 @@ export class PetService {
                 }
             });
         } catch (err: unknown) {
-            handleError(err, 'petService.deletePetsByOwnerId');
+            handleError(err, 'petService.deletePetsByOwnerId', 'pets');
         }
     }
 
