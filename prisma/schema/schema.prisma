@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password      String
+  firstname     String?      @db.VarChar(30)
+  lastname      String?      @db.VarChar(30)
+  avatar        String?
+  phone         String?      @db.VarChar(20)
+  refreshToken  String?      @unique @map("refresh_token")
+  role          Role
+  accountStatus AccountState @default(ACTIVE) @map("account_status")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  customer      Customer?
+  petsitter     Petsitter?
+  admin         Admin?
+  reporterList  Report[]       @relation("reporter")
+  reportedList  Report[]       @relation("reported")
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Admin {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @map("user_id")
+
+  @@map("admins")
+}
+
+model Payment {
+  id            String       @id @default(uuid())
+  timestamp     DateTime     @default(now())
+  amount        Float
+  state         PaymentState @default(PENDING)
+  transactionId String       @unique @map("transaction_id")
+  activity      Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId    String       @unique @map("activity_id")
+
+  @@map("payments")
+}
+
+model Qualification {
+  id             String   @id @default(uuid())
+  email          String   @unique @db.VarChar(50)
+  password       String
+  firstname      String   @db.VarChar(30)
+  lastname       String   @db.VarChar(30)
+  phone          String   @db.VarChar(20)
+  state          State    @default(PENDING)
+  certificateUrl String   @map("certificate_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("qualifications")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  title     String
+  content   String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@map("notifications")
+}
+
+enum ReportType {
+  SERVICE_QUALITY
+  CUSTOMER_BEHAVIOR
+  UNPROFESSIONAL_CONDUCT
+  INAPPROPRIATE_COMMUNICATION
+  OTHER
+
+  @@map("report_types")
+}
+
+enum Role {
+  CUSTOMER
+  PETSITTER
+  ADMIN
+
+  @@map("roles")
+}
+
+enum State {
+  PENDING
+  ACCEPTED
+  REJECTED
+
+  @@map("states")
+}
+
+enum AccountState {
+  ACTIVE
+  INACTIVE
+  BANNED
+
+  @@map("account_states")
+}
+
+enum PaymentState {
+  PENDING
+  SUCCEEDED
+  FAILED
+
+  @@map("payment_states")
+}
+
+enum ActivityState {
+  PENDING // Petsitter: Requested, Customer: Unassigned
+  REJECTED // for petsitter after customer rejected
+  CANCELLED // activity has been cancelled by customer
+  ASSIGNED // Petsitter: Scheduled, Customer: Assigned
+  IN_PROGRESS // for petsitter after customer accepted
+  RETURNING // for petsitter after activity end
+  FAILED // activity failed
+  COMPLETED // activity completed
+
+  @@map("activity_states")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("genders")
+}
+
+enum ServiceType {
+  FEEDING
+  GROOMING
+  EXERCISING
+  TRAINING
+  ADMINISTERING_MEDICATION
+  RELAXATION
+
+  @@map("service_types")
+}
