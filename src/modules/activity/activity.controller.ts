@@ -26,6 +26,7 @@ import {
   CreateProgressSchema,
   CreateProgressDto,
   UpdateActivityStateDto,
+  UpdateTaskStatusDto,
 } from './dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -189,6 +190,22 @@ export class ActivityController {
     return {
       statusCode: HttpStatus.OK,
       message: "All activities deleted successfully.",
+    }
+  }
+
+  @Roles(Role.PETSITTER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put(':id/task/:taskId') // PUT /activities/:id/task/:taskId
+  async updateTaskStatus(
+    @Param() { id, taskId }: { id: string, taskId: string },
+    @Body() { status }: UpdateTaskStatusDto,
+    @CurrentUser() user: User,
+  ) {
+    const result = await this.activityService.updateTaskStatus(id, user["petsitter"]["id"], taskId, status);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Task state updated successfully.",
+      data: result
     }
   }
 

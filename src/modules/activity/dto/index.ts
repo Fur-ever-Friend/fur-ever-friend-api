@@ -11,3 +11,5 @@ export * from './request/activity-query.dto';
 export * from './request/activity-petsitter-query.dto';
 
 export * from './request/update-activity-state.dto';
+
+export * from './request/update-task-status.dto';

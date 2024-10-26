@@ -1242,6 +1242,36 @@ export class ActivityService {
     return progresses;
   }
 
+  // new
+  async updateTaskStatus(id: string, petsitterId: string, taskId: string, status: boolean): Promise<void> {
+    const task = await this.prismaService.task.findUnique({
+      where: { id: taskId },
+      select: { status: true, id: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Task not found`);
+    }
+
+    const activity = await this.prismaService.activity.findUnique({
+      where: { id },
+      select: { state: true, petsitterId: true },
+    });
+
+    if (!activity || activity.petsitterId !== petsitterId) {
+      throw new BadRequestException(`You are not authorized to update task status for this activity.`);
+    }
+
+    if (task.status === status) {
+      throw new BadRequestException(`Task status is already ${status ? 'completed' : 'incomplete'}`);
+    }
+
+    await this.prismaService.task.update({
+      where: { id: taskId },
+      data: { status },
+    });
+  }
+
   async createReview(data: CreateReviewDto, petsitterId: string): Promise<Partial<Review>> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id: data.activityId },
