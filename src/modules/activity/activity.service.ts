@@ -1,9 +1,8 @@
-import { Activity, ActivityProgress, ActivityState, Invitation, Prisma, Review, Role, State, User } from '@prisma/client';
+import { Activity, ActivityProgress, ActivityState, Invitation, Prisma, Role, User } from '@prisma/client';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
 import {
-  CreateReviewDto,
   CreateActivityDto,
   CreateProgressDto,
   ActivityPetsitterQueryDto,

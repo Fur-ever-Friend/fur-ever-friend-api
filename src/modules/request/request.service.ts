@@ -6,6 +6,7 @@ import { convertToUtc } from '@/common/utils';
 import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class RequestService {
@@ -13,6 +14,7 @@ export class RequestService {
     private readonly prismaService: PrismaService,
     private readonly paymentService: PaymentService,
     private readonly activityService: ActivityService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   async getAllRequests(): Promise<GetRequestResponseDto[]> {
@@ -108,51 +110,92 @@ export class RequestService {
   }
 
   async acceptRequest(id: string, customerId: string) {
-    try {
-      const customer = await this.prismaService.customer.findUnique({
-        where: { id: customerId },
-      });
+    const customer = await this.prismaService.customer.findUnique({
+      where: { id: customerId },
+    });
 
-      if (!customer) {
-        throw new NotFoundException(`Customer not found`);
-      }
-
-      const request = await this.prismaService.petsitterRequest.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          price: true,
-          state: true,
-          activityId: true,
-          petsitterId: true,
-        }
-      });
-
-      if (!request) {
-        throw new NotFoundException('Request not found');
-      }
-
-      if (request.state !== State.PENDING) {
-        throw new BadRequestException('The request is not pending');
-      }
-
-      const payment = await this.paymentService.createPayment({ activityId: request.activityId, amount: request.price });
-
-      await this.prismaService.petsitterRequest.update({
-        where: { id: request.id, state: State.PENDING },
-        data: { state: State.ACCEPTED },
-      });
-
-      await this.prismaService.petsitterRequest.updateMany({
-        where: { activityId: request.activityId, id: { not: request.id } },
-        data: { state: State.REJECTED },
-      });
-
-      await this.activityService.updateActivityPetsitterState(request.activityId, ActivityState.ASSIGNED, request.petsitterId, request.price);
-
-      return payment;
-    } catch (err) {
-      console.log(err);
+    if (!customer) {
+      throw new NotFoundException(`Customer not found`);
     }
+
+    const request = await this.prismaService.petsitterRequest.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        price: true,
+        state: true,
+        activityId: true,
+        petsitter: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        }
+      }
+    });
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    if (request.state !== State.PENDING) {
+      throw new BadRequestException('The request is not pending');
+    }
+
+    const payment = await this.paymentService.createPayment({ activityId: request.activityId, amount: request.price });
+
+    await this.notificationService.create({
+      title: 'Request Accepted',
+      content: `Your request for the activity has been accepted. Please proceed to payment.`,
+      userId: request.petsitter.user.id,
+    });
+
+    await this.prismaService.petsitterRequest.update({
+      where: { id: request.id, state: State.PENDING },
+      data: { state: State.ACCEPTED },
+    });
+
+    // get all requests for the activity
+    const requests = await this.prismaService.petsitterRequest.findMany({
+      where: { activityId: request.activityId, state: State.PENDING },
+      select: {
+        id: true,
+        state: true,
+        petsitter: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // reject all other requests
+    for (const req of requests) {
+      if (req.id !== request.id) {
+        await this.notificationService.create({
+          title: 'Request Rejected',
+          content: `Your request for the activity has been rejected.`,
+          userId: req.petsitter.user.id,
+        });
+
+        await this.prismaService.petsitterRequest.update({
+          where: { id: req.id },
+          data: { state: State.REJECTED },
+        });
+      }
+    }
+
+    await this.activityService.updateActivityPetsitterState(request.activityId, ActivityState.ASSIGNED, request.petsitter.id, request.price);
+
+    return payment;
   }
 }
