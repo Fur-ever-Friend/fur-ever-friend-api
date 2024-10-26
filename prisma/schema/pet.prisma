@@ -1,0 +1,47 @@
+
+model Pet {
+  id          String  @id @default(uuid())
+  name        String  @db.VarChar(20)
+  age         Int
+  weight      Float
+  imageUrl    String  @map("image_url")
+  gender      Gender
+  personality String?
+  allergy     String?
+  otherDetail String? @map("other_detail")
+
+  animalType   AnimalType? @relation(fields: [animalTypeId], references: [id], onDelete: SetNull)
+  animalTypeId String?     @map("animal_type_id")
+
+  breed   Breed?  @relation(fields: [breedId], references: [id], onDelete: SetNull)
+  breedId String? @map("breed_id")
+
+  ownerId String   @map("owner_id")
+  owner   Customer @relation(fields: [ownerId], references: [id])
+
+  services ActivityService[]
+
+  @@map("pets")
+}
+
+model AnimalType {
+  id   String @id @default(uuid())
+  name String @unique @db.VarChar(30)
+
+  pets   Pet[]
+  breeds Breed[]
+
+  @@map("animal_types")
+}
+
+model Breed {
+  id   String @id @default(uuid())
+  name String @unique @db.VarChar(30)
+
+  animalType   AnimalType? @relation(fields: [animalTypeId], references: [id], onDelete: SetNull)
+  animalTypeId String?     @map("animal_type_id")
+
+  pets Pet[]
+
+  @@map("breeds")
+}
