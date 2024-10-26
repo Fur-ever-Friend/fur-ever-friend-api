@@ -211,19 +211,6 @@ export class ActivityController {
 
   @Roles(Role.CUSTOMER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('review')
-  @HttpCode(HttpStatus.CREATED)
-  async createReview(@CurrentUser() user: User, @Body() data: CreateReviewDto) {
-    const result = await this.activityService.createReview(data, user["customer"]["id"]);
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: "Review created successfully.",
-      data: result,
-    }
-  }
-
-  @Roles(Role.CUSTOMER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(':id/invite')
   @HttpCode(HttpStatus.CREATED)
   async invitePetsitter(@Param() { id }: Id, @CurrentUser() user: User, @Body() { petsitterId }: InvitePetsitterDto) {

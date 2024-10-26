@@ -16,7 +16,10 @@ export class ReviewController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createReviewDto: CreateReviewDto) {
+  async create(@Body() createReviewDto: CreateReviewDto, @CurrentUser() user: User) {
+    if (createReviewDto.customerId !== user["customer"]["id"]) {
+      throw new BadRequestException('Invalid customer ID');
+    }
     const result = await this.reviewService.create(createReviewDto);
     return {
       statusCode: HttpStatus.CREATED,
@@ -25,27 +28,27 @@ export class ReviewController {
     }
   }
 
-  @Roles(Role.ADMIN, Role.PETSITTER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get()
-  async findAll(@CurrentUser() user: User) {
-    let result: Partial<Review>[] = [];
-    if (user.role === Role.PETSITTER) {
-      result = await this.reviewService.findAllByPetsitterId(user.id);
-    } else if (user.role === Role.ADMIN) {
-      result = await this.reviewService.findAll();
-    } else {
-      throw new BadRequestException('Invalid role');
-    }
+  // @Roles(Role.ADMIN, Role.PETSITTER)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Get()
+  // async findAll(@CurrentUser() user: User) {
+  //   let result: Partial<Review>[] = [];
+  //   if (user.role === Role.PETSITTER) {
+  //     result = await this.reviewService.findAllByPetsitterId(user["petsitter"]["id"]);
+  //   } else if (user.role === Role.ADMIN) {
+  //     result = await this.reviewService.findAll();
+  //   } else {
+  //     throw new BadRequestException('Invalid role');
+  //   }
 
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Reviews fetched successfully.',
-      data: result,
-    }
-  }
+  //   return {
+  //     statusCode: HttpStatus.OK,
+  //     message: 'Reviews fetched successfully.',
+  //     data: result,
+  //   }
+  // }
 
-  @Roles(Role.ADMIN, Role.CUSTOMER)
+  @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('petsitter/:id')
   async findAllByPetsitterId(@Param() { id }: Id) {

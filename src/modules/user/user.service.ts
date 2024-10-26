@@ -824,4 +824,26 @@ export class UserService {
             where: { id: userId }
         });
     }
+
+    async updatePetsitterRating(petsitterId: string) {
+        const reviews = await this.prismaService.review.findMany({
+            where: { petsitterId },
+        });
+
+        const reports = await this.prismaService.report.findMany({
+            where: { reportedId: petsitterId },
+        });
+
+        const totalReviews = reviews.length;
+        const totalReports = reports.length;
+
+        const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
+
+        const newRating = averageRating - totalReports * 0.1; // Deduct 0.1 for each report
+
+        await this.prismaService.petsitter.update({
+            where: { id: petsitterId },
+            data: { rating: newRating },
+        });
+    }
 }
