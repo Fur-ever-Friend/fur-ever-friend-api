@@ -49,7 +49,12 @@ export class ReviewController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('petsitter/:id')
   async findAllByPetsitterId(@Param() { id }: Id) {
-    return this.reviewService.findAllByPetsitterId(id);
+    const result = await this.reviewService.findAllByPetsitterId(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Reviews fetched successfully.',
+      data: result,
+    }
   }
 
 }
