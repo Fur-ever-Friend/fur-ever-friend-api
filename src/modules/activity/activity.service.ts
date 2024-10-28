@@ -1376,13 +1376,14 @@ export class ActivityService {
         }
         await Promise.all([
           this.notificationService.create({
-            title: 'Activity Completed',
-            content: `The activity is completed.`,
+            title: `Activity ${state === ActivityState.COMPLETED ? 'Completed' : 'Failed'}`,
+            content: `The activity has been marked as ${state === ActivityState.COMPLETED ? 'COMPLETED' : 'FAILED'}.`,
             userId: activity.customer.user.id,
           }),
+
           this.notificationService.create({
-            title: 'Activity Completed',
-            content: `The activity is completed.`,
+            title: `Activity ${state === ActivityState.COMPLETED ? 'Completed' : 'Failed'}`,
+            content: `The activity has been marked as ${state === ActivityState.COMPLETED ? 'COMPLETED' : 'FAILED'}.`,
             userId: activity.petsitter.user.id,
           }),
         ]);
