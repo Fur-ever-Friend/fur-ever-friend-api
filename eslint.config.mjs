@@ -11,10 +11,7 @@ export default [
       '@typescript-eslint': typescriptPlugin,
     },
     rules: {
-      // Change eqeqeq rule to warn
-      'eqeqeq': ['warn', 'always'],
-
-      // Change no-unused-vars rule to warn and allow unused args matching /^_/u
+      eqeqeq: ['warn', 'always'],
       'no-unused-vars': [
         'warn',
         {
@@ -27,8 +24,6 @@ export default [
           vars: 'all',
         },
       ],
-
-      // Other rules
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-return-await': 'error',
@@ -39,7 +34,7 @@ export default [
       'comma-spacing': ['error', { before: false, after: true }],
       'comma-style': ['error', 'last'],
       'eol-last': ['error', 'always'],
-      'indent': ['error', 2, { SwitchCase: 1 }],
+      indent: ['error', 2, { SwitchCase: 1 }],
       'key-spacing': ['error', { beforeColon: false, afterColon: true }],
       'keyword-spacing': ['error', { before: true, after: true }],
       'linebreak-style': ['error', 'unix'],
@@ -47,14 +42,12 @@ export default [
       'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 0 }],
       'no-trailing-spaces': 'error',
       'object-curly-spacing': ['error', 'always'],
-      'quotes': ['error', 'single', { avoidEscape: true }],
-      'semi': ['error', 'always'],
+      quotes: ['error', 'single', { avoidEscape: true }],
+      semi: ['error', 'always'],
       'space-before-blocks': ['error', 'always'],
       'space-before-function-paren': ['error', 'never'],
       'space-in-parens': ['error', 'never'],
       'space-infix-ops': 'error',
-
-      // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {
