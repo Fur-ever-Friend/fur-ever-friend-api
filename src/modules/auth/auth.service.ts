@@ -63,8 +63,6 @@ export class AuthService {
         const nbf = Math.floor(Date.now() / 1000) + 30;
         const payload: JwtPayload = { sub: userId, role };
         const payloadWithNbf = { ...payload, nbf };
-        console.log("exp", process.env.ACCESS_EXPIRES_IN);
-        console.log("exp", process.env.REFRESH_EXPIRES_IN);
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
                 secret: process.env.ACCESS_TOKEN_SECRET,
