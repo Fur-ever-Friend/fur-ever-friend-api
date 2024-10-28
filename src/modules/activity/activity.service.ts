@@ -1,4 +1,4 @@
-import { Activity, ActivityProgress, ActivityState, Invitation, Prisma, Role, User } from '@prisma/client';
+import { Activity, ActivityProgress, ActivityState, Prisma, Role, User } from '@prisma/client';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
@@ -121,10 +121,17 @@ export class ActivityService {
         });
 
         for (const activity of updatedActivities) {
-          // send notification to customer
-          const customer = activity.customer.user;
-          const petsitter = activity.petsitter.user;
-          console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from ASSIGNED to IN_PROGRESS`);
+          await this.notificationService.create({
+            title: 'Activity Started',
+            content: `Your activity ${activity.title} has started.`,
+            userId: activity.customer.user.id,
+          });
+
+          await this.notificationService.create({
+            title: 'Activity Started',
+            content: `You have started the activity ${activity.title}.`,
+            userId: activity.petsitter.user.id,
+          });
         }
 
       }
@@ -134,151 +141,201 @@ export class ActivityService {
     }
   }
 
-  @Cron('*/16 * * * * *', { // Runs every 16 seconds; adjust frequency as needed
-    name: 'updateActivityStateFromReturningToCompleted',
-    timeZone: 'Asia/Bangkok',
-  })
-  async handleCronUpdateActivityStateFromReturningToCompleted() {
-    try {
-      // const oneDayAgo = new Date();
-      // oneDayAgo.setDate(oneDayAgo.getDate() - 1); // 24 hours ago
+  // @Cron('*/16 * * * * *', { // Runs every 16 seconds; adjust frequency as needed
+  //   name: 'updateActivityStateFromReturningToCompleted',
+  //   timeZone: 'Asia/Bangkok',
+  // })
+  // async handleCronUpdateActivityStateFromReturningToCompleted() {
+  //   try {
+  //     // const oneDayAgo = new Date();
+  //     // oneDayAgo.setDate(oneDayAgo.getDate() - 1); // 24 hours ago
 
-      const twoMinsAgo = new Date();
-      twoMinsAgo.setMinutes(twoMinsAgo.getMinutes() - 2); // 2 minutes ago
+  //     const twoMinsAgo = new Date();
+  //     twoMinsAgo.setMinutes(twoMinsAgo.getMinutes() - 2); // 2 minutes ago
 
-      // Step 1: Find activities in the RETURNING state for more than 24 hours
-      const overdueReturningActivities = await this.prismaService.activity.findMany({
-        where: {
-          state: ActivityState.RETURNING,
-          updatedAt: { lte: twoMinsAgo },
-        },
-      });
+  //     // Step 1: Find activities in the RETURNING state for more than 24 hours
+  //     const overdueReturningActivities = await this.prismaService.activity.findMany({
+  //       where: {
+  //         state: ActivityState.RETURNING,
+  //         updatedAt: { lte: twoMinsAgo },
+  //       },
+  //       select: {
+  //         id: true,
+  //         title: true,
+  //         customer: {
+  //           select: {
+  //             id: true,
+  //             user: {
+  //               select: {
+  //                 id: true,
+  //               }
+  //             }
+  //           },
+  //         },
+  //         petsitter: {
+  //           select: {
+  //             id: true,
+  //             user: {
+  //               select: {
+  //                 id: true,
+  //               }
+  //             }
+  //           },
+  //         },
+  //       }
+  //     });
 
-      for (const activity of overdueReturningActivities) {
-        // Step 2: Update the state to COMPLETED automatically
-        await this.prismaService.activity.update({
-          where: { id: activity.id },
-          data: { state: ActivityState.COMPLETED },
-        });
+  //     for (const activity of overdueReturningActivities) {
+  //       // Step 2: Update the state to COMPLETED automatically
+  //       await this.prismaService.activity.update({
+  //         where: { id: activity.id },
+  //         data: { state: ActivityState.COMPLETED },
+  //       });
 
-        // Step 3: Notify the customer and the pet sitter of the automatic completion
-        console.log(`Activity ${activity.id} has been automatically marked as COMPLETED.`);
-      }
-    } catch (err) {
-      console.error('Error in auto-completing returning activities:', err);
-    }
-  }
+  //       // Step 3: Notify the customer and the pet sitter of the automatic completion
+  //       console.log(`Activity ${activity.id} has been automatically marked as COMPLETED.`);
 
-  @Cron('*/16 * * * * *', {
-    name: 'updateActivityStateFromInProgressToReturning',
-    timeZone: 'Asia/Bangkok',
-  })
-  async handleCronUpdateActivityStateFromInProgressToReturning() {
-    try {
-      const now = new Date();
-      const updatedRecords = await this.prismaService.activity.updateMany({
-        where: {
-          AND: [
-            { endDateTime: { lte: now } },
-            { state: ActivityState.IN_PROGRESS },
-          ],
-        },
-        data: {
-          state: ActivityState.RETURNING,
-        },
-      });
+  //       await this.notificationService.create({
+  //         title: 'Activity Completed',
+  //         content: `Your activity ${activity.title} has been automatically marked as COMPLETED.`,
+  //         userId: activity.customer.user.id,
+  //       });
 
-      if (updatedRecords.count > 0) {
-        const updatedActivities = await this.prismaService.activity.findMany({
-          where: {
-            endDateTime: { lte: now },
-            state: ActivityState.RETURNING,
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: updatedRecords.count,
-          select: {
-            id: true,
-            title: true,
-            detail: true,
-            createdAt: true,
-            updatedAt: true,
-            startDateTime: true,
-            endDateTime: true,
-            price: true,
-            pickupPoint: true,
-            state: true,
-            services: {
-              select: {
-                id: true,
-                pet: {
-                  select: {
-                    id: true,
-                    name: true,
-                    breed: true,
-                    age: true,
-                  },
-                },
-                tasks: {
-                  select: {
-                    id: true,
-                    type: true,
-                    detail: true,
-                    status: true,
-                    createdAt: true,
-                  },
-                },
-              },
-            },
-            customer: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            petsitter: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            progresses: {
-              select: {
-                id: true,
-                content: true,
-                images: true,
-                createdAt: true,
-              },
-            },
-          }
-        });
+  //       await this.notificationService.create({
+  //         title: 'Activity Completed',
+  //         content: `The activity ${activity.title} has been automatically marked as COMPLETED.`,
+  //         userId: activity.petsitter.user.id,
+  //       });
+  //     }
+  //   } catch (err) {
+  //     console.error('Error in auto-completing returning activities:', err);
+  //   }
+  // }
 
-        for (const activity of updatedActivities) {
-          // send notification to customer
-          const customer = activity.customer.user;
-          const petsitter = activity.petsitter.user;
-          console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from IN_PROGRESS to RETURNING`);
-        }
+  // @Cron('*/16 * * * * *', {
+  //   name: 'updateActivityStateFromInProgressToReturning',
+  //   timeZone: 'Asia/Bangkok',
+  // })
+  // async handleCronUpdateActivityStateFromInProgressToReturning() {
+  //   try {
+  //     const now = new Date();
+  //     const updatedRecords = await this.prismaService.activity.updateMany({
+  //       where: {
+  //         AND: [
+  //           { endDateTime: { lte: now } },
+  //           { state: ActivityState.IN_PROGRESS },
+  //         ],
+  //       },
+  //       data: {
+  //         state: ActivityState.RETURNING,
+  //       },
+  //     });
 
-      }
+  //     if (updatedRecords.count > 0) {
+  //       const updatedActivities = await this.prismaService.activity.findMany({
+  //         where: {
+  //           endDateTime: { lte: now },
+  //           state: ActivityState.RETURNING,
+  //         },
+  //         orderBy: { updatedAt: 'desc' },
+  //         take: updatedRecords.count,
+  //         select: {
+  //           id: true,
+  //           title: true,
+  //           detail: true,
+  //           createdAt: true,
+  //           updatedAt: true,
+  //           startDateTime: true,
+  //           endDateTime: true,
+  //           price: true,
+  //           pickupPoint: true,
+  //           state: true,
+  //           services: {
+  //             select: {
+  //               id: true,
+  //               pet: {
+  //                 select: {
+  //                   id: true,
+  //                   name: true,
+  //                   breed: true,
+  //                   age: true,
+  //                 },
+  //               },
+  //               tasks: {
+  //                 select: {
+  //                   id: true,
+  //                   type: true,
+  //                   detail: true,
+  //                   status: true,
+  //                   createdAt: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //           customer: {
+  //             select: {
+  //               id: true,
+  //               user: {
+  //                 select: {
+  //                   id: true,
+  //                   email: true,
+  //                   firstname: true,
+  //                   lastname: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //           petsitter: {
+  //             select: {
+  //               id: true,
+  //               user: {
+  //                 select: {
+  //                   id: true,
+  //                   email: true,
+  //                   firstname: true,
+  //                   lastname: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //           progresses: {
+  //             select: {
+  //               id: true,
+  //               content: true,
+  //               images: true,
+  //               createdAt: true,
+  //             },
+  //           },
+  //         }
+  //       });
 
-    } catch (err: unknown) {
-      console.error('Error in cron job:', err);
-    }
-  }
+  //       for (const activity of updatedActivities) {
+  //         // send notification to customer
+  //         const customer = activity.customer.user;
+  //         const petsitter = activity.petsitter.user;
+  //         console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from IN_PROGRESS to RETURNING`);
+
+  //         // send notification to petsitter
+  //         await this.notificationService.create({
+  //           title: 'Activity Returning',
+  //           content: `The activity ${activity.title} is returning.`,
+  //           userId: petsitter.id,
+  //         });
+
+  //         // send notification to customer
+  //         await this.notificationService.create({
+  //           title: 'Activity Returning',
+  //           content: `The activity ${activity.title} is returning.`,
+  //           userId: customer.id,
+  //         });
+  //       }
+
+  //     }
+
+  //   } catch (err: unknown) {
+  //     console.error('Error in cron job:', err);
+  //   }
+  // }
 
   @Cron('*/16 * * * * *', {
     name: 'updateActivityStateFromPendingToCancelled',
@@ -288,7 +345,7 @@ export class ActivityService {
     try {
       // if startDateTime <= now - 2 minutes and state = PENDING, then update state to CANCELLED
       const afterTwoMins = new Date();
-      afterTwoMins.setMinutes(afterTwoMins.getMinutes() - 1); // 1 minutes later
+      afterTwoMins.setMinutes(afterTwoMins.getMinutes() - 3); // 1 minutes later
       const updatedRecords = await this.prismaService.activity.updateMany({
         where: {
           AND: [
@@ -385,6 +442,13 @@ export class ActivityService {
           // send notification to customer
           const customer = activity.customer.user;
           console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from PENDING to CANCELLED`);
+
+          // send notification to petsitter
+          await this.notificationService.create({
+            title: 'Activity Cancelled',
+            content: `The activity ${activity.title} has been cancelled.`,
+            userId: activity.customer.user.id,
+          });
         }
 
       }
@@ -532,15 +596,6 @@ export class ActivityService {
           },
         },
         state: true,
-        payments: {
-          select: {
-            id: true,
-            amount: true,
-            transactionId: true,
-            state: true,
-            timestamp: true,
-          },
-        },
         progresses: {
           select: {
             id: true,
@@ -700,15 +755,6 @@ export class ActivityService {
             images: true,
             createdAt: true,
           },
-        },
-        payments: {
-          select: {
-            id: true,
-            amount: true,
-            transactionId: true,
-            state: true,
-            timestamp: true,
-          }
         },
         requests: {
           select: {
@@ -992,15 +1038,16 @@ export class ActivityService {
             },
           }
         },
-        payments: {
+        review: {
           select: {
             id: true,
-            amount: true,
-            transactionId: true,
-            state: true,
-            timestamp: true,
-          },
-        },
+            rating: true,
+            content: true,
+            createdAt: true,
+            customerId: true,
+            petsitterId: true,
+          }
+        }
       }
     });
 
@@ -1198,6 +1245,26 @@ export class ActivityService {
     }
   };
 
+  async updateActivityStateToReturning(id: string): Promise<void> {
+    const activity = await this.prismaService.activity.findUnique({
+      where: { id },
+      select: { state: true },
+    });
+
+    if (!activity) {
+      throw new NotFoundException(`Activity not found`);
+    }
+
+    if (activity.state !== ActivityState.IN_PROGRESS) {
+      throw new BadRequestException(`You can only update activity state to RETURNING for an activity in the IN_PROGRESS state.`);
+    }
+
+    await this.prismaService.activity.update({
+      where: { id },
+      data: { state: ActivityState.RETURNING },
+    });
+  }
+
   async updateActivityState(id: string, state: ActivityState): Promise<void> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
@@ -1269,6 +1336,37 @@ export class ActivityService {
       data,
     });
 
+  }
+
+  async updateActivityStateByPetsitter(id: string, state: ActivityState, petsitterId: string): Promise<void> {
+    const activity = await this.prismaService.activity.findUnique({
+      where: { id },
+      select: { state: true },
+    });
+
+    if (!activity) {
+      throw new NotFoundException(`Activity not found`);
+    }
+
+    if (activity.state !== ActivityState.IN_PROGRESS) {
+      throw new BadRequestException(`You can only update activity state for an activity in the IN_PROGRESS state.`);
+    }
+
+    if (state !== ActivityState.ASSIGNED && state !== ActivityState.REJECTED && state !== ActivityState.COMPLETED) {
+      throw new BadRequestException(`Invalid state transition from PENDING to ${state}`);
+    }
+
+    await this.prismaService.activity.update({
+      where: { id },
+      data: {
+        state,
+        petsitter: {
+          connect: { id: petsitterId },
+        },
+      },
+    });
+
+    console.log(`Activity ${id} has been ${state === ActivityState.ASSIGNED ? 'assigned' : 'rejected'} to petsitter ${petsitterId}`);
   }
 
   async updateActivityPetsitterState(id: string, state: ActivityState, petsitterId: string, price: number): Promise<void> {
@@ -1434,39 +1532,5 @@ export class ActivityService {
       where: { id: taskId },
       data: { status },
     });
-  }
-
-  async invitePetsitter(activityId: string, customerId: string, petsitterId: string): Promise<Partial<Invitation>> {
-    const activity = await this.prismaService.activity.findUnique({
-      where: { id: activityId },
-    });
-
-    if (!activity) {
-      throw new NotFoundException(`Activity not found`);
-    }
-
-    if (activity.customerId !== customerId) {
-      throw new BadRequestException(`You are not authorized to invite a petsitter for this activity.`);
-    }
-
-    if (activity.state !== ActivityState.PENDING) {
-      throw new BadRequestException(`You can only invite a petsitter for an activity in the PENDING state.`);
-    }
-
-    // create new invitation
-    const invitation = await this.prismaService.invitation.create({
-      data: {
-        activity: {
-          connect: { id: activityId },
-        },
-        petsitter: {
-          connect: { id: petsitterId },
-        },
-        link: `http://localhost:3000/activities/${activityId}`,
-      }
-    });
-
-    // optional: send notification to petsitter
-    return invitation;
   }
 }

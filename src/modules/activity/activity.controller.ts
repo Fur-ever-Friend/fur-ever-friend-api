@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -21,7 +22,6 @@ import { v4 as uuidV4 } from 'uuid';
 
 import { ActivityService } from './activity.service';
 import {
-  CreateReviewDto,
   CreateActivityDto,
   CreateProgressSchema,
   CreateProgressDto,
@@ -36,7 +36,6 @@ import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils';
 import { Id } from '@/common/global-dtos/id-query.dto';
 import { ActivityQueryDto } from './dto/request/activity-query.dto';
 import { ActivityPetsitterQueryDto } from './dto/request/activity-petsitter-query.dto';
-import { InvitePetsitterDto } from './dto/request/invite-petsitter.dto';
 
 @ApiTags('activities')
 @ApiBearerAuth()
@@ -147,7 +146,6 @@ export class ActivityController {
   ) {
     const jsonParse = JSON.parse(progress);
     const progressData = CreateProgressSchema.parse(jsonParse) satisfies CreateProgressDto;
-    console.log("progressData", progressData);
     const progressImages = files.map(file => file.filename) ?? [];
     const result = await this.activityService.createProgress(id, user["petsitter"]["id"], progressData, progressImages);
 
@@ -170,15 +168,18 @@ export class ActivityController {
     }
   }
 
-  @Roles(Role.CUSTOMER)
+  @Roles(Role.CUSTOMER, Role.PETSITTER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put(':id') // PUT /activities/:id
+  @Patch(':id') // PATCH /activities/:id
   async updateActivityState(@Param() { id }: Id, @Body() { state }: UpdateActivityStateDto, @CurrentUser() user: User) {
-    const result = await this.activityService.updateActivityState(id, state);
+    if (user.role === Role.PETSITTER) {
+      await this.activityService.updateActivityStateToReturning(id);
+    } else {
+      await this.activityService.updateActivityState(id, state);
+    }
     return {
       statusCode: HttpStatus.OK,
       message: "Activity state updated successfully.",
-      data: result,
     }
   }
 
@@ -206,19 +207,6 @@ export class ActivityController {
       statusCode: HttpStatus.OK,
       message: "Task state updated successfully.",
       data: result
-    }
-  }
-
-  @Roles(Role.CUSTOMER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(':id/invite')
-  @HttpCode(HttpStatus.CREATED)
-  async invitePetsitter(@Param() { id }: Id, @CurrentUser() user: User, @Body() { petsitterId }: InvitePetsitterDto) {
-    const result = await this.activityService.invitePetsitter(id, user["customer"]["id"], petsitterId);
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: "Petsitter invited successfully.",
-      data: result,
     }
   }
 }

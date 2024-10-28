@@ -45,7 +45,6 @@ model Payment {
   amount        Float
   state         PaymentState @default(PENDING)
   transactionId String       @unique @map("transaction_id")
-  activity      Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
   activityId    String       @unique @map("activity_id")
 
   @@map("payments")

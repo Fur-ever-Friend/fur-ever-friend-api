@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, UseGuards, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { Id } from '@/common/global-dtos/id-query.dto';
 import { Roles } from '@/common/decorators/roles.decorator';
-import { Review, Role, User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -17,10 +17,7 @@ export class ReviewController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createReviewDto: CreateReviewDto, @CurrentUser() user: User) {
-    if (createReviewDto.customerId !== user["customer"]["id"]) {
-      throw new BadRequestException('Invalid customer ID');
-    }
-    const result = await this.reviewService.create(createReviewDto);
+    const result = await this.reviewService.create(user["customer"]["id"], createReviewDto);
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Review created successfully.',

@@ -66,6 +66,8 @@ export class ReportController {
       const jsonParsed = JSON.parse(jsonStr);
       const createReportDto = CreateReportSchema.parse(jsonParsed);
       if (user.role !== Role.ADMIN) {
+        console.log(createReportDto.reporterId, user.id);
+        console.log(user);
         if (createReportDto.reporterId !== user.id) {
           throw new BadRequestException("You are not allowed to report on behalf of another user.");
         }

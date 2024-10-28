@@ -110,6 +110,9 @@ export class RequestService {
   }
 
   async acceptRequest(id: string, customerId: string) {
+    const minhalf = new Date();
+    minhalf.setMinutes(minhalf.getMinutes() + 1);
+    minhalf.setSeconds(30);
     const customer = await this.prismaService.customer.findUnique({
       where: { id: customerId },
     });
@@ -146,11 +149,27 @@ export class RequestService {
       throw new BadRequestException('The request is not pending');
     }
 
+    const activity = await this.prismaService.activity.findUnique({
+      where: {
+        id: request.activityId,
+        startDateTime: { gte: minhalf },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!activity) {
+      throw new BadRequestException('The activity has already started or ended');
+    }
+
     const payment = await this.paymentService.createPayment({ activityId: request.activityId, amount: request.price });
+
+    await this.activityService.updateActivityPetsitterState(request.activityId, ActivityState.ASSIGNED, request.petsitter.id, request.price);
 
     await this.notificationService.create({
       title: 'Request Accepted',
-      content: `Your request for the activity has been accepted. Please proceed to payment.`,
+      content: `Your request for the activity has been accepted.`,
       userId: request.petsitter.user.id,
     });
 
@@ -193,8 +212,6 @@ export class RequestService {
         });
       }
     }
-
-    await this.activityService.updateActivityPetsitterState(request.activityId, ActivityState.ASSIGNED, request.petsitter.id, request.price);
 
     return payment;
   }

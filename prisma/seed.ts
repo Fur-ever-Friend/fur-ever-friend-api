@@ -39,32 +39,32 @@ async function main() {
         skipDuplicates: true,
     });
 
-    await prisma.user.createMany({
-        data: [{
-            email: "admin2@admin.com",
-            password: "admin1234",
-            role: "ADMIN",
-        },
-        {
-            email: "customer2@customer.com",
-            password: "admin1234",
-            role: "CUSTOMER",
-            firstname: "John",
-            lastname: "Mcginn",
-            avatar: "bd4239a-6363-4ea5-a6c6-d9bc97857a5b-antonyV2.jpg",
-            phone: "0123456789",
-        },
-        {
-            email: "customer2@mail.com",
-            password: "admin1234",
-            role: "CUSTOMER",
-            firstname: "Mark",
-            lastname: "Nobel",
-            avatar: "bd4239a-6363-4ea5-a6c6-d9bc97857a5b-antonyV2.jpg",
-            phone: "0123456789",
-        },
-        ]
-    })
+    // await prisma.user.createMany({
+    //     data: [{
+    //         email: "admin2@admin.com",
+    //         password: "admin1234",
+    //         role: "ADMIN",
+    //     },
+    //     {
+    //         email: "customer2@customer.com",
+    //         password: "admin1234",
+    //         role: "CUSTOMER",
+    //         firstname: "John",
+    //         lastname: "Mcginn",
+    //         avatar: "bd4239a-6363-4ea5-a6c6-d9bc97857a5b-antonyV2.jpg",
+    //         phone: "0123456789",
+    //     },
+    //     {
+    //         email: "customer2@mail.com",
+    //         password: "admin1234",
+    //         role: "CUSTOMER",
+    //         firstname: "Mark",
+    //         lastname: "Nobel",
+    //         avatar: "bd4239a-6363-4ea5-a6c6-d9bc97857a5b-antonyV2.jpg",
+    //         phone: "0123456789",
+    //     },
+    //     ]
+    // })
 
     console.log('Seeding completed!');
 }

@@ -309,6 +309,7 @@ export class UserService {
                                     createdAt: true,
                                     content: true,
                                     rating: true,
+                                    activityId: true,
                                     customer: {
                                         select: {
                                             id: true,
@@ -439,6 +440,7 @@ export class UserService {
                                     content: true,
                                     rating: true,
                                     createdAt: true,
+                                    activityId: true,
                                     customer: {
                                         select: {
                                             id: true,
@@ -455,7 +457,6 @@ export class UserService {
                                     }
                                 }
                             },
-                            invitations: true,
                         }
                     },
                 }
