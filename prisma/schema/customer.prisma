@@ -1,0 +1,54 @@
+model Customer {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @map("user_id")
+
+  activities Activity[]
+  pets       Pet[]
+  favourites Favourite[]
+  reviews    Review[]
+
+  @@map("customers")
+}
+
+model Favourite {
+  id          String    @id @default(uuid())
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String    @map("customer_id")
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id], onDelete: Cascade)
+  petsitterId String    @map("petsitter_id")
+
+  @@unique([customerId, petsitterId])
+  @@map("favourites")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  content   String
+  rating    Int
+
+  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
+  petsitterId String    @map("petsitter_id")
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String   @map("customer_id")
+
+  @@map("reviews")
+}
+
+model Report {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now()) @map("created_at")
+  type         ReportType
+  content      String
+  reportImages String[]   @map("report_images")
+
+  reporter   User   @relation("reporter", fields: [reporterId], references: [id])
+  reporterId String @map("reporter_id")
+
+  reported   User   @relation("reported", fields: [reportedId], references: [id])
+  reportedId String @map("reported_id")
+
+  @@map("reports")
+}

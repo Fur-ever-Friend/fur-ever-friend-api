@@ -29,3 +29,5 @@ export * from "./invitation/invitation.module";
 export * from "./notification/notification.module";
 
 export * from "./favourite/favourite.module";
+
+export * from "./review/review.module";

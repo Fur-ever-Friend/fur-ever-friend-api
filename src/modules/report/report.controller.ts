@@ -9,12 +9,13 @@ import {
   UseInterceptors,
   UploadedFiles,
   HttpStatus,
-  Query
+  Query,
+  BadRequestException
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidV4 } from 'uuid';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 
 import { ReportService } from './report.service';
 import { ReportQueryDto, CreateReportSchema } from './dto';
@@ -22,6 +23,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @Controller('reports')
 export class ReportController {
@@ -59,10 +61,15 @@ export class ReportController {
     }),
   )
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[]) {
+  async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() user: User) {
     try {
       const jsonParsed = JSON.parse(jsonStr);
       const createReportDto = CreateReportSchema.parse(jsonParsed);
+      if (user.role !== Role.ADMIN) {
+        if (createReportDto.reporterId !== user.id) {
+          throw new BadRequestException("You are not allowed to report on behalf of another user.");
+        }
+      }
       const reportImages = files.map((file) => file.filename);
       const response = await this.reportService.create(createReportDto, reportImages);
       return {
@@ -71,7 +78,7 @@ export class ReportController {
         data: response,
       }
     } catch (err: unknown) {
-      handleError(err, "ReportController.create");
+      handleError(err, "ReportController.create", "report");
     }
   }
 

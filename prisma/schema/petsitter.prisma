@@ -1,0 +1,22 @@
+model Petsitter {
+  id             String     @id @default(uuid())
+  user           User       @relation(fields: [userId], references: [id])
+  userId         String     @unique @map("user_id")
+  quote          String     @default("")
+  location       String     @default("")
+  about          String     @default("")
+  experience     String     @default("")
+  rating         Float      @default(4.0)
+  certificateUrl String     @map("certificate_url")
+  coverImages    String[]   @map("cover_images")
+  activities     Activity[]
+  serviceTags    String[]   @map("service_tags")
+
+  requests   PetsitterRequest[]
+  favourites Favourite[]
+
+  invitations Invitation[]
+  reviews     Review[]
+
+  @@map("petsitters")
+}

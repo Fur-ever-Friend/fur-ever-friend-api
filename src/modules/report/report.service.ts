@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,11 +19,16 @@ export class ReportService {
     const reporterId = createReportDto.reporterId;
     const reportedId = createReportDto.reportedId;
 
+    if (reporterId === reportedId) {
+      throw new BadRequestException('Reporter and reported user cannot be the same');
+    }
+
     const reporter = this.userService.getUserByIdWithoutCredential(reporterId);
     const reported = this.userService.getUserByIdWithoutCredential(reportedId);
     if (!reporter || !reported) {
       throw new NotFoundException('Reporter or reported user not found');
     }
+
     const report = await this.prismaService.report.create({
       data: {
         ...createReportDto,

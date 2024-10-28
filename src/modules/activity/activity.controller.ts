@@ -26,6 +26,7 @@ import {
   CreateProgressSchema,
   CreateProgressDto,
   UpdateActivityStateDto,
+  UpdateTaskStatusDto,
 } from './dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -172,7 +173,7 @@ export class ActivityController {
   @Roles(Role.CUSTOMER)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':id') // PUT /activities/:id
-  async updateActivityState(@Param('id') { id }: Id, @Body() { state }: UpdateActivityStateDto, @CurrentUser() user: User) {
+  async updateActivityState(@Param() { id }: Id, @Body() { state }: UpdateActivityStateDto, @CurrentUser() user: User) {
     const result = await this.activityService.updateActivityState(id, state);
     return {
       statusCode: HttpStatus.OK,
@@ -194,26 +195,17 @@ export class ActivityController {
 
   @Roles(Role.PETSITTER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('review')
-  @HttpCode(HttpStatus.CREATED)
-  async createReview(@CurrentUser() user: User, @Body() data: CreateReviewDto) {
-    const result = await this.activityService.createReview(data, user["petsitter"]["id"]);
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: "Review created successfully.",
-      data: result,
-    }
-  }
-
-  @Roles(Role.ADMIN, Role.CUSTOMER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(':id/review')
-  async getReviewByActivityId(@Param() { id }: Id) {
-    const result = await this.activityService.getReviewByActivityId(id);
+  @Put(':id/task/:taskId') // PUT /activities/:id/task/:taskId
+  async updateTaskStatus(
+    @Param() { id, taskId }: { id: string, taskId: string },
+    @Body() { status }: UpdateTaskStatusDto,
+    @CurrentUser() user: User,
+  ) {
+    const result = await this.activityService.updateTaskStatus(id, user["petsitter"]["id"], taskId, status);
     return {
       statusCode: HttpStatus.OK,
-      message: "Review retrieved successfully.",
-      data: result,
+      message: "Task state updated successfully.",
+      data: result
     }
   }
 
@@ -229,5 +221,4 @@ export class ActivityController {
       data: result,
     }
   }
-
 }

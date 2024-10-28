@@ -12,13 +12,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AnimalTypeService } from '../animal-type/animal-type.service';
 import { GLOBAL_CONSTS, validateAndConvertDateTimes, } from '@/common/utils';
-import { request } from 'http';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ActivityService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly animalTypeService: AnimalTypeService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   @Cron('*/16 * * * * *', {
@@ -493,8 +494,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                imageUrl: true,
+                gender: true,
+                personality: true,
+                allergy: true,
+                weight: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                }
               },
             },
             tasks: {
@@ -600,8 +624,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    }
+                  }
+                },
                 age: true,
+                allergy: true,
+                gender: true,
+                imageUrl: true,
+                personality: true,
+                weight: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
             tasks: {
@@ -655,6 +702,40 @@ export class ActivityService {
             createdAt: true,
           },
         },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            transactionId: true,
+            state: true,
+            timestamp: true,
+          }
+        },
+        requests: {
+          select: {
+            id: true,
+            createdAt: true,
+            message: true,
+            price: true,
+            state: true,
+            petsitter: {
+              select: {
+                id: true,
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstname: true,
+                    lastname: true,
+                    avatar: true,
+                    phone: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          }
+        },
       }
     });
 
@@ -664,7 +745,9 @@ export class ActivityService {
   async getActivitiesByPetsitter(id: string, activityPetsitterQueryDto: ActivityPetsitterQueryDto) {
     const petsitter = await this.prismaService.petsitter.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+      },
     });
 
     if (!petsitter) {
@@ -706,8 +789,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                allergy: true,
+                weight: true,
+                imageUrl: true,
+                gender: true,
+                otherDetail: true,
+                personality: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             tasks: {
@@ -816,8 +922,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                imageUrl: true,
+                gender: true,
+                allergy: true,
+                weight: true,
+                personality: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             tasks: {
@@ -864,12 +993,13 @@ export class ActivityService {
             },
           }
         },
-        review: {
+        payments: {
           select: {
             id: true,
-            content: true,
-            rating: true,
-            createdAt: true,
+            amount: true,
+            transactionId: true,
+            state: true,
+            timestamp: true,
           },
         },
       }
@@ -970,8 +1100,31 @@ export class ActivityService {
               select: {
                 id: true,
                 name: true,
-                breed: true,
                 age: true,
+                weight: true,
+                gender: true,
+                imageUrl: true,
+                personality: true,
+                allergy: true,
+                otherDetail: true,
+                animalType: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                breed: {
+                  select: {
+                    id: true,
+                    name: true,
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                }
               },
             },
             tasks: {
@@ -1015,6 +1168,14 @@ export class ActivityService {
                 role: true,
               },
             },
+          },
+        },
+        progresses: {
+          select: {
+            id: true,
+            content: true,
+            images: true,
+            createdAt: true,
           },
         },
       },
@@ -1242,216 +1403,38 @@ export class ActivityService {
     return progresses;
   }
 
-  async createReview(data: CreateReviewDto, petsitterId: string): Promise<Partial<Review>> {
+  // new
+  async updateTaskStatus(id: string, petsitterId: string, taskId: string, status: boolean): Promise<void> {
+    const task = await this.prismaService.task.findUnique({
+      where: { id: taskId },
+      select: { status: true, id: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Task not found`);
+    }
+
     const activity = await this.prismaService.activity.findUnique({
-      where: { id: data.activityId },
+      where: { id },
+      select: { state: true, petsitterId: true },
     });
 
-    if (!activity) {
-      throw new NotFoundException(`Activity not found`);
+    if (!activity || activity.petsitterId !== petsitterId) {
+      throw new BadRequestException(`You are not authorized to update task status for this activity.`);
     }
 
-    if (activity.petsitterId !== petsitterId) {
-      throw new BadRequestException(`You are not authorized to review this activity.`);
+    if (activity.state !== ActivityState.IN_PROGRESS) {
+      throw new BadRequestException(`You can only update task status for an activity in the IN_PROGRESS state.`);
     }
 
-    const review = await this.prismaService.review.create({
-      data: {
-        content: data.content,
-        rating: data.rating,
-        activity: {
-          connect: { id: data.activityId },
-        },
-        petsitter: {
-          connect: { id: petsitterId },
-        },
-      },
-      select: {
-        id: true,
-        content: true,
-        rating: true,
-        createdAt: true,
-        activity: {
-          select: {
-            id: true,
-            title: true,
-            detail: true,
-            startDateTime: true,
-            endDateTime: true,
-            price: true,
-            pickupPoint: true,
-            state: true,
-            services: {
-              select: {
-                id: true,
-                pet: {
-                  select: {
-                    id: true,
-                    name: true,
-                    breed: true,
-                    age: true,
-                  },
-                },
-                tasks: {
-                  select: {
-                    id: true,
-                    type: true,
-                    detail: true,
-                    status: true,
-                    createdAt: true,
-                  },
-                },
-              },
-            },
-            customer: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            petsitter: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            progresses: {
-              select: {
-                id: true,
-                content: true,
-                images: true,
-                createdAt: true,
-              },
-            },
-          },
-        }
-      },
-    });
-
-    await this.updatePetsitterRating(petsitterId);
-    return review;
-  }
-
-  private async updatePetsitterRating(petsitterId: string) {
-    const reviews = await this.prismaService.review.findMany({
-      where: { activity: { petsitterId } },
-    });
-
-    const reports = await this.prismaService.report.findMany({
-      where: { reportedId: petsitterId },
-    });
-
-    const totalReviews = reviews.length;
-    const totalReports = reports.length;
-
-    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
-
-    const newRating = averageRating - totalReports * 0.1; // Deduct 0.1 for each report
-
-    await this.prismaService.petsitter.update({
-      where: { id: petsitterId },
-      data: { rating: newRating },
-    });
-  }
-
-  async getReviewByActivityId(activityId: string): Promise<Partial<Review>> {
-    const review = await this.prismaService.review.findUnique({
-      where: { activityId },
-      select: {
-        id: true,
-        content: true,
-        rating: true,
-        createdAt: true,
-        activity: {
-          select: {
-            id: true,
-            title: true,
-            detail: true,
-            startDateTime: true,
-            endDateTime: true,
-            price: true,
-            pickupPoint: true,
-            state: true,
-            services: {
-              select: {
-                id: true,
-                pet: {
-                  select: {
-                    id: true,
-                    name: true,
-                    breed: true,
-                    age: true,
-                  },
-                },
-                tasks: {
-                  select: {
-                    id: true,
-                    type: true,
-                    detail: true,
-                    status: true,
-                    createdAt: true,
-                  },
-                },
-              },
-            },
-            customer: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            petsitter: {
-              select: {
-                id: true,
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                  },
-                },
-              },
-            },
-            progresses: {
-              select: {
-                id: true,
-                content: true,
-                images: true,
-                createdAt: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!review) {
-      throw new NotFoundException(`Review not found`);
+    if (task.status === status) {
+      throw new BadRequestException(`Task status is already ${status ? 'completed' : 'incomplete'}`);
     }
 
-    return review;
+    await this.prismaService.task.update({
+      where: { id: taskId },
+      data: { status },
+    });
   }
 
   async invitePetsitter(activityId: string, customerId: string, petsitterId: string): Promise<Partial<Invitation>> {
