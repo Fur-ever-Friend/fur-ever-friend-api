@@ -40,7 +40,6 @@ export class ReportService {
       throw new NotFoundException('Activity not found');
     }
 
-    console.log(activity.state);
     if (activity.state !== ActivityState.COMPLETED && activity.state !== ActivityState.FAILED) {
       throw new BadRequestException('Activity must be completed or failed to report');
     }
@@ -89,8 +88,6 @@ export class ReportService {
     const where: Prisma.ReportWhereInput = {};
     if (type) where.type = type;
     if (startDate && endDate) where.createdAt = { gte: startDate, lte: endDate };
-    console.log(where);
-    console.log(reportQueryDto);
     const reports = await this.prismaService.report.findMany({
       where,
       take: limit,

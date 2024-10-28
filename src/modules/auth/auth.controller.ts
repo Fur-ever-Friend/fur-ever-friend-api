@@ -35,8 +35,8 @@ export class AuthController {
   async login(@Req() req: Request, @Res() res: Response) {
     const { id: userId, role, createdAt, ...otherFields } = req.user as Partial<User>;
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
-    res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
-    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
+    res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 24 * 60 * 60 })
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1 * 24 * 60 * 60 })
     return res.json({
       statusCode: HttpStatus.OK,
       message: "Welcome back! You have logged in successfully.",
