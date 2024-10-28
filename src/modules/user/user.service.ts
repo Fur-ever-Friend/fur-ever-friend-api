@@ -19,14 +19,19 @@ export class UserService {
                 searchType,
                 sortOrder = SortOrder.ASC,
                 sortBy = SortBy.ID,
+                role,
                 page = 1,
                 limit = 10,
             } = query;
 
-            const where = {
-                role: {
-                    not: Role.ADMIN,
-                },
+            const where = {} as Prisma.UserWhereInput;
+
+            if (role) {
+                where['role'] = role;
+            } else {
+                where['role'] = {
+                    not: Role.ADMIN
+                }
             }
 
             if (search && searchType) {
