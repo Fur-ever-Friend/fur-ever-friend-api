@@ -55,7 +55,7 @@ model Report {
   reportedId String @map("reported_id")
 
   activity   Activity @relation(fields: [activityId], references: [id])
-  activityId String   @unique @map("activity_id")
+  activityId String   @map("activity_id")
 
   @@map("reports")
 }
