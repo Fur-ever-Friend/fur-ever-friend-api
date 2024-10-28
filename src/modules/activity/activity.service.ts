@@ -1258,7 +1258,18 @@ export class ActivityService {
   async updateActivityStateToReturning(id: string): Promise<void> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
-      select: { state: true },
+      select: {
+        state: true, customer: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+              }
+            }
+          }
+        }
+      },
     });
 
     if (!activity) {
@@ -1273,12 +1284,40 @@ export class ActivityService {
       where: { id },
       data: { state: ActivityState.RETURNING },
     });
+
+    await this.notificationService.create({
+      title: 'Activity Returning',
+      content: `The activity is returning.`,
+      userId: activity.customer.user.id,
+    });
   }
 
   async updateActivityState(id: string, state: ActivityState): Promise<void> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
-      select: { state: true },
+      select: {
+        state: true,
+        customer: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+              }
+            },
+          },
+        },
+        petsitter: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+              }
+            },
+          },
+        }
+      },
     });
 
     if (!activity) {
@@ -1335,6 +1374,18 @@ export class ActivityService {
         } else {
           throw new BadRequestException(`Invalid state transition from RETURNING to ${state}`);
         }
+        await Promise.all([
+          this.notificationService.create({
+            title: 'Activity Completed',
+            content: `The activity is completed.`,
+            userId: activity.customer.user.id,
+          }),
+          this.notificationService.create({
+            title: 'Activity Completed',
+            content: `The activity is completed.`,
+            userId: activity.petsitter.user.id,
+          }),
+        ]);
         break;
 
       default:
