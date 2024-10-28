@@ -96,7 +96,7 @@ export class ReportController {
     }
   }
 
-  @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
+  @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {

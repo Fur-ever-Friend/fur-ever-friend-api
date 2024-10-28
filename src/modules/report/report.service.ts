@@ -141,15 +141,64 @@ export class ReportService {
         content: true,
         reportImages: true,
         createdAt: true,
+        activity: {
+          select: {
+            id: true,
+            state: true,
+            createdAt: true,
+            price: true,
+            startDateTime: true,
+            endDateTime: true,
+            title: true,
+            detail: true,
+            pickupPoint: true,
+            services: {
+              select: {
+                id: true,
+                pet: {
+                  select: {
+                    id: true,
+                    name: true,
+                    gender: true,
+                    imageUrl: true,
+                    weight: true,
+                    personality: true,
+                    otherDetail: true,
+                    allergy: true,
+                    age: true,
+                    breed: {
+                      select: {
+                        id: true,
+                        name: true,
+                        animalType: {
+                          select: {
+                            id: true,
+                            name: true,
+                          }
+                        }
+                      }
+                    },
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      }
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         reporter: {
           select: {
             id: true,
             email: true,
             role: true,
+            avatar: true,
             firstname: true,
             lastname: true,
-            avatar: true,
-          }
+          },
         },
         reported: {
           select: {
