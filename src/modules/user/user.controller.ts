@@ -305,7 +305,7 @@ export class UserController {
             return this.userService.getUserByIdWithDetails(userId);
         } else {
             const result = await this.userService.getUserByIdWithoutCredential(userId);
-            if (user.role === result.role) throw new NotFoundException('User not found'); //same role cannot see each other
+            // if (user.role === result.role) throw new NotFoundException('User not found'); //same role cannot see each other
             return {
                 statusCode: HttpStatus.OK,
                 message: "User retrieved successfully.",

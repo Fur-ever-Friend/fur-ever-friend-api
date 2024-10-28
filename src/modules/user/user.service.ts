@@ -177,6 +177,29 @@ export class UserService {
                             location: true,
                             serviceTags: true,
                             coverImages: true,
+                            reviews: {
+                                select: {
+                                    id: true,
+                                    content: true,
+                                    rating: true,
+                                    createdAt: true,
+                                    activityId: true,
+                                    customer: {
+                                        select: {
+                                            id: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                            },
                         }
                     },
                     customer: {
