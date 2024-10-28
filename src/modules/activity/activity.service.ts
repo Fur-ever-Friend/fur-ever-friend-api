@@ -748,6 +748,16 @@ export class ActivityService {
             },
           },
         },
+        review: {
+          select: {
+            id: true,
+            rating: true,
+            content: true,
+            createdAt: true,
+            customerId: true,
+            petsitterId: true,
+          },
+        },
         progresses: {
           select: {
             id: true,
