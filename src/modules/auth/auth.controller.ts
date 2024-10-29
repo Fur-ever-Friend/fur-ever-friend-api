@@ -1,7 +1,8 @@
-import { Controller, Post, Req, UseGuards, Res, HttpCode, HttpStatus, Body, ForbiddenException, UnauthorizedException, Get } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Post, Req, UseGuards, Res, HttpCode, HttpStatus, Body, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { User } from '@prisma/client';
+
+import { AuthService } from './auth.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LocalAuthGuard } from './guard/local-auth.guard';
 import { RefreshJwtAuthGuard } from './guard/refresh-auth.guard';
@@ -15,8 +16,8 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
     const { token, user } = await this.authService.register(createUserDto)
-    res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
-    res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
+    res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60 })
+    res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7 })
     return res.json({
       statusCode: HttpStatus.CREATED,
       message: "Welcome aboard! Your account has been created successfully.",
@@ -35,8 +36,8 @@ export class AuthController {
   async login(@Req() req: Request, @Res() res: Response) {
     const { id: userId, role, createdAt, ...otherFields } = req.user as Partial<User>;
     const { accessToken, refreshToken } = await this.authService.login({ userId, role })
-    res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 })
-    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 })
+    res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60 })
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7 })
     return res.json({
       statusCode: HttpStatus.OK,
       message: "Welcome back! You have logged in successfully.",

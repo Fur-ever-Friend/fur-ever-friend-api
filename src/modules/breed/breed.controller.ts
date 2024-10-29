@@ -11,7 +11,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 export class BreedController {
     constructor(private readonly breedService: BreedService) { }
 
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Get()
     async getBreeds() {

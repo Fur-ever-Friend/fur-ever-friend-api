@@ -6,7 +6,8 @@ model Customer {
   activities Activity[]
   pets       Pet[]
   favourites Favourite[]
-  reviews    Review[]
+
+  reviews Review[]
 
   @@map("customers")
 }
@@ -27,6 +28,9 @@ model Review {
   createdAt DateTime @default(now()) @map("created_at")
   content   String
   rating    Int
+
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @unique @map("activity_id")
 
   petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
   petsitterId String    @map("petsitter_id")
@@ -49,6 +53,9 @@ model Report {
 
   reported   User   @relation("reported", fields: [reportedId], references: [id])
   reportedId String @map("reported_id")
+
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String   @map("activity_id")
 
   @@map("reports")
 }

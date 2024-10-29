@@ -22,9 +22,8 @@ model Activity {
 
   services ActivityService[]
 
-  payments Payment[]
-
-  invitation Invitation[]
+  review  Review?
+  reports Report[]
 
   @@map("activities")
 }
@@ -83,18 +82,4 @@ model ActivityService {
   tasks Task[]
 
   @@map("activity_services")
-}
-
-model Invitation {
-  id         String   @id @default(uuid())
-  createdAt  DateTime @default(now()) @map("created_at")
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  activityId String   @map("activity_id")
-
-  petsitter   Petsitter @relation(fields: [petsitterId], references: [id])
-  petsitterId String    @map("petsitter_id")
-
-  link String
-
-  @@map("invitations")
 }

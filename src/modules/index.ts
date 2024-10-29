@@ -24,8 +24,6 @@ export * from "./customer/customer.module";
 
 export * from "./prisma/prisma.module";
 
-export * from "./invitation/invitation.module";
-
 export * from "./notification/notification.module";
 
 export * from "./favourite/favourite.module";

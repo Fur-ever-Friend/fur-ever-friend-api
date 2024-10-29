@@ -18,7 +18,6 @@ import {
   AnimalTypeModule,
   ReportModule,
   FavouriteModule,
-  InvitationModule,
   NotificationModule,
   ReviewModule,
 } from './modules';
@@ -26,7 +25,7 @@ import {
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     MulterModule.registerAsync({
       useFactory: () => ({
@@ -41,7 +40,7 @@ import {
     AuthModule,
     UserModule,
     PetSitterModule,
-    ActivityModule,
+    ActivityModule, // only one instance
     PaymentModule,
     PetModule,
     RequestModule,
@@ -50,11 +49,9 @@ import {
     AnimalTypeModule,
     CustomerModule,
     ReportModule,
-    InvitationModule,
     NotificationModule,
     FavouriteModule,
-    ActivityModule,
     ReviewModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

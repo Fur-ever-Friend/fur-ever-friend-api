@@ -2,22 +2,46 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityState } from '@prisma/client';
 
 @Injectable()
 export class ReviewService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
+    private readonly activityService: ActivityService,
   ) { }
-  async create(createReviewDto: CreateReviewDto) {
-    if (createReviewDto.customerId === createReviewDto.petsitterId) {
-      throw new BadRequestException('Customer ID and Petsitter ID cannot be the same.');
+  async create(customerId: string, createReviewDto: CreateReviewDto) {
+    const activity = await this.activityService.getActivityById(createReviewDto.activityId);
+    if (!activity) {
+      throw new BadRequestException('Activity not found');
     }
-    await this.userService.getUserByPetsitterId(createReviewDto.petsitterId);
-    await this.userService.getUserByCustomerId(createReviewDto.customerId);
+
+    if (activity["customer"]["id"] !== customerId) {
+      throw new BadRequestException('You are not allowed to review this activity');
+    }
+
+    if (activity["petsitter"]["id"] !== createReviewDto.petsitterId) {
+      throw new BadRequestException('Invalid petsitter');
+    }
+
+    if (activity.state !== ActivityState.COMPLETED) {
+      throw new BadRequestException('Activity is not completed yet');
+    }
+
+    if (activity["review"]) {
+      throw new BadRequestException('Review already exists');
+    }
 
     const review = await this.prismaService.review.create({
-      data: createReviewDto,
+      data: {
+        rating: createReviewDto.rating,
+        content: createReviewDto.content,
+        customerId,
+        petsitterId: createReviewDto.petsitterId,
+        activityId: createReviewDto.activityId,
+      },
       select: {
         id: true,
         rating: true,
@@ -135,7 +159,8 @@ export class ReviewService {
               },
             }
           },
-        }
+        },
+        activityId: true,
       }
     });
   }

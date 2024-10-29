@@ -33,7 +33,6 @@ export const basePetsitterFields = {
     coverImages: true,
     activities: true,
     requests: true,
-    invitations: true,
 } satisfies Prisma.PetsitterSelect;
 
 export const baseCustomerFields = {

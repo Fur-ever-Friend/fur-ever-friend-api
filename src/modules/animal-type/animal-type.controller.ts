@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 export class AnimalTypeController {
     constructor(private readonly animalTypeService: AnimalTypeService) { }
 
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Get()
     async getAnimalTypes() {

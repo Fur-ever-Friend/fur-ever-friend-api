@@ -2,7 +2,7 @@ import { IsIn, IsNotEmpty, IsNumber, IsString, IsUUID } from "class-validator";
 
 export class CreateReviewDto {
     @IsUUID("4")
-    customerId: string;
+    activityId: string;
 
     @IsUUID("4")
     petsitterId: string;

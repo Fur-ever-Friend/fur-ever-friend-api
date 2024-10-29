@@ -15,8 +15,7 @@ model Petsitter {
   requests   PetsitterRequest[]
   favourites Favourite[]
 
-  invitations Invitation[]
-  reviews     Review[]
+  reviews Review[]
 
   @@map("petsitters")
 }

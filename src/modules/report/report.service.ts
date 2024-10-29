@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { ActivityState, Prisma, Role } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
@@ -7,12 +7,14 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { CreateReportDto, ReportQueryDto } from './dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class ReportService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
+    private readonly activityService: ActivityService,
   ) { }
 
   async create(createReportDto: CreateReportDto, reportImages: string[]) {
@@ -23,10 +25,23 @@ export class ReportService {
       throw new BadRequestException('Reporter and reported user cannot be the same');
     }
 
-    const reporter = this.userService.getUserByIdWithoutCredential(reporterId);
-    const reported = this.userService.getUserByIdWithoutCredential(reportedId);
+    const reporter = await this.userService.getUserByIdWithoutCredential(reporterId);
+    const reported = await this.userService.getUserByIdWithoutCredential(reportedId);
     if (!reporter || !reported) {
       throw new NotFoundException('Reporter or reported user not found');
+    }
+
+    // if (reporter.role === Role.CUSTOMER) {
+    //   await this.activityService.updateActivityState(createReportDto.activityId, ActivityState.FAILED);
+    // }
+
+    const activity = await this.activityService.getActivityById(createReportDto.activityId);
+    if (!activity) {
+      throw new NotFoundException('Activity not found');
+    }
+
+    if (activity.state !== ActivityState.COMPLETED && activity.state !== ActivityState.FAILED) {
+      throw new BadRequestException('Activity must be completed or failed to report');
     }
 
     const report = await this.prismaService.report.create({
@@ -73,8 +88,6 @@ export class ReportService {
     const where: Prisma.ReportWhereInput = {};
     if (type) where.type = type;
     if (startDate && endDate) where.createdAt = { gte: startDate, lte: endDate };
-    console.log(where);
-    console.log(reportQueryDto);
     const reports = await this.prismaService.report.findMany({
       where,
       take: limit,
@@ -128,15 +141,64 @@ export class ReportService {
         content: true,
         reportImages: true,
         createdAt: true,
+        activity: {
+          select: {
+            id: true,
+            state: true,
+            createdAt: true,
+            price: true,
+            startDateTime: true,
+            endDateTime: true,
+            title: true,
+            detail: true,
+            pickupPoint: true,
+            services: {
+              select: {
+                id: true,
+                pet: {
+                  select: {
+                    id: true,
+                    name: true,
+                    gender: true,
+                    imageUrl: true,
+                    weight: true,
+                    personality: true,
+                    otherDetail: true,
+                    allergy: true,
+                    age: true,
+                    breed: {
+                      select: {
+                        id: true,
+                        name: true,
+                        animalType: {
+                          select: {
+                            id: true,
+                            name: true,
+                          }
+                        }
+                      }
+                    },
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      }
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         reporter: {
           select: {
             id: true,
             email: true,
             role: true,
+            avatar: true,
             firstname: true,
             lastname: true,
-            avatar: true,
-          }
+          },
         },
         reported: {
           select: {
