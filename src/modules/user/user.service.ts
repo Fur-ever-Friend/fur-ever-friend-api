@@ -4,6 +4,7 @@ import { AccountState, Customer, Petsitter, Prisma, Role, State, User } from '@p
 import { handleError, hashPassword, allowFieldUpdate } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto, CreateUserDto, SearchType, SortBy, SortOrder, UpdateCustomerDto, UpdatePetsitterDto, UpdateUserDto, UserQueryDto } from './dto';
+import { PetsitterQueryDto } from './dto/petsitter-query-param.dto';
 
 @Injectable()
 export class UserService {
@@ -737,6 +738,116 @@ export class UserService {
         } catch (err) {
             handleError(err, 'userService.updatePetsitter', 'user');
         }
+    }
+
+    async findAllPetsitters(queryParams: PetsitterQueryDto) {
+        const { search, page = 1, limit = 10 } = queryParams;
+
+        const skip = (page - 1) * limit;
+        const take = limit;
+
+        const where = {
+            accountStatus: AccountState.ACTIVE,
+            role: Role.PETSITTER,
+        } as Prisma.UserWhereInput;
+
+        if (search) {
+            const names = search.split(' ');
+            if (names.length === 1) {
+                where['OR'] = [
+                    {
+                        firstname: {
+                            startsWith: names[0],
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        lastname: {
+                            startsWith: names[0],
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
+            } else if (names.length === 2) {
+                where['OR'] = [
+                    {
+                        firstname: {
+                            startsWith: names[0],
+                            mode: 'insensitive'
+                        },
+                        lastname: {
+                            startsWith: names[1],
+                            mode: 'insensitive'
+                        }
+                    },
+                ]
+            }
+        }
+        const petsitters = await this.prismaService.user.findMany({
+            where: {
+                role: Role.PETSITTER,
+                accountStatus: AccountState.ACTIVE,
+                ...where
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                phone: true,
+                avatar: true,
+                accountStatus: true,
+                petsitter: {
+                    select: {
+                        id: true,
+                        certificateUrl: true,
+                        about: true,
+                        experience: true,
+                        quote: true,
+                        rating: true,
+                        location: true,
+                        serviceTags: true,
+                        petTags: true,
+                        coverImages: true,
+                        reviews: {
+                            select: {
+                                id: true,
+                                content: true,
+                                rating: true,
+                                createdAt: true,
+                                activityId: true,
+                                customer: {
+                                    select: {
+                                        id: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                    }
+                }
+            },
+            skip,
+            take,
+        });
+
+        const total = await this.prismaService.user.count({ where });
+
+        return {
+            data: petsitters,
+            total,
+            totalPage: Math.ceil(total / limit),
+            currentPage: page,
+        };
+
     }
 
     async updateUser(userId: string, data: UpdateUserDto): Promise<Partial<User>> {

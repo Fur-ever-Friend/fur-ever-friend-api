@@ -29,6 +29,7 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UserService } from './user.service';
 import { SetUserStatusDto, UpdateCustomerSchema, UpdatePetsitterDtoSchema, UpdateUserDtoSchema, UserQueryDto } from './dto';
 import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
+import { PetsitterQueryDto } from './dto/petsitter-query-param.dto';
 
 @Controller('users')
 export class UserController {
@@ -72,6 +73,18 @@ export class UserController {
             statusCode: HttpStatus.OK,
             message: 'User retrieved successfully.',
             data: rest,
+        }
+    }
+
+    @Roles(Role.ADMIN, Role.CUSTOMER) // Get Petsitter
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Get('petsitter')
+    async getPetsitters(@Query() queryParams: PetsitterQueryDto) {
+        const petsitters = await this.userService.findAllPetsitters(queryParams);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Petsitters retrieved successfully.',
+            data: petsitters,
         }
     }
 
