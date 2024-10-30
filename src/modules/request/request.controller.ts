@@ -29,8 +29,13 @@ export class RequestController {
   @Get('petsitter')
   @Roles(Role.PETSITTER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getRequestsByPetsitter(@CurrentUser() user: User): Promise<GetRequestResponseDto[]> {
-    return this.requestService.getRequestsByPetsitter(user["petsitter"]["id"]);
+  async getRequestsByPetsitter(@CurrentUser() user: User) {
+    const response = await this.requestService.getRequestsByPetsitter(user["petsitter"]["id"]);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Requests fetched successfully',
+      data: response,
+    }
   }
 
   @Roles(Role.CUSTOMER, Role.ADMIN, Role.PETSITTER)

@@ -23,6 +23,7 @@ export class QualificationService {
                     state: true,
                     certificateUrl: true,
                     createdAt: true,
+                    phone: true,
                 }
             });
             return qualification;
@@ -35,11 +36,21 @@ export class QualificationService {
         }
     }
 
-    async getQualification(email: string): Promise<Qualification> {
+    async getQualification(email: string): Promise<Partial<Qualification>> {
         const qualification = await this.prismaService.qualification.findUnique({
             where: {
                 email
             },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                state: true,
+                certificateUrl: true,
+                createdAt: true,
+                phone: true,
+            }
         })
 
         if (!qualification) throw new NotFoundException(`Qualification with email: ${email} not found!`);
@@ -60,6 +71,7 @@ export class QualificationService {
                 state: true,
                 certificateUrl: true,
                 createdAt: true,
+                phone: true,
             }
         })
 
@@ -78,26 +90,24 @@ export class QualificationService {
                 state: true,
                 certificateUrl: true,
                 createdAt: true,
+                phone: true,
             }
         });
     }
 
-    async updateQualification(id: string, state: State): Promise<boolean> {
+    async updateQualification(id: string, state: State): Promise<void> {
         const qualification = await this.prismaService.qualification.update({
             where: { id },
             data: { state }
         });
         if (!qualification) throw new NotFoundException(`Qualification with id: ${id} not found!`);
-        return true;
     }
 
-    async deleteQualification(id: string): Promise<boolean> {
+    async deleteQualification(id: string): Promise<void> {
         const qualification = await this.prismaService.qualification.delete({
             where: { id }
         });
 
         if (!qualification) throw new NotFoundException(`Qualification with id: ${id} not found!`);
-
-        return true;
     }
 }
