@@ -20,6 +20,7 @@ export class UserService {
                 sortOrder = SortOrder.ASC,
                 sortBy = SortBy.ID,
                 role,
+                accountState,
                 page = 1,
                 limit = 10,
             } = query;
@@ -32,6 +33,10 @@ export class UserService {
                 where['role'] = {
                     not: Role.ADMIN
                 }
+            }
+
+            if (accountState) {
+                where['accountStatus'] = accountState;
             }
 
             if (search && searchType) {
@@ -692,6 +697,29 @@ export class UserService {
                             location: true,
                             serviceTags: true,
                             coverImages: true,
+                            reviews: {
+                                select: {
+                                    id: true,
+                                    content: true,
+                                    rating: true,
+                                    createdAt: true,
+                                    activityId: true,
+                                    customer: {
+                                        select: {
+                                            id: true,
+                                            user: {
+                                                select: {
+                                                    id: true,
+                                                    firstname: true,
+                                                    lastname: true,
+                                                    avatar: true,
+                                                    email: true,
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

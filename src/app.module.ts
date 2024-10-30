@@ -33,14 +33,14 @@ import {
       }),
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/attachments/',
     }),
     ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     PetSitterModule,
-    ActivityModule, // only one instance
+    ActivityModule,
     PaymentModule,
     PetModule,
     RequestModule,

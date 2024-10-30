@@ -93,8 +93,41 @@ export class RequestService {
     }
 
     const requests = await this.prismaService.petsitterRequest.findMany({
-      where: { petsitterId: petsitter.id },
-      include: { activity: true },
+      where: { petsitterId: petsitter.id, state: State.PENDING },
+      select: {
+        id: true,
+        price: true,
+        message: true,
+        state: true,
+        createdAt: true,
+        activity: {
+          select: {
+            id: true,
+            title: true,
+            detail: true,
+            price: true,
+            startDateTime: true,
+            endDateTime: true,
+            pickupPoint: true,
+            createdAt: true,
+            customer: {
+              select: {
+                id: true,
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    phone: true,
+                    firstname: true,
+                    lastname: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      }
     });
 
     return requests.map(GetRequestResponseDto.formatRequestResponse);

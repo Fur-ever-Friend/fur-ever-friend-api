@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const isDevelopment = configService.get<string>('NODE_ENV') === 'development';
-  const corsAllowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [];
+  const corsAllowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS').split(',');
 
   app.use(cookieParser());
 

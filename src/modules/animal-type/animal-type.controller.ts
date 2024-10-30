@@ -38,8 +38,8 @@ export class AnimalTypeController {
 
     @Roles(Role.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Post()
     @HttpCode(HttpStatus.CREATED)
+    @Post()
     async addAnimalType(@Body() { name }: AnimalTypeDto) {
         const result = await this.animalTypeService.addAnimalType(name);
         return {
@@ -48,7 +48,7 @@ export class AnimalTypeController {
             data: result
         }
     }
-    
+
     @Roles(Role.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Put(":id")
