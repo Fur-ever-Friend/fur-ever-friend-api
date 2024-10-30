@@ -21,7 +21,6 @@ import {
   NotificationModule,
   ReviewModule,
 } from './modules';
-console.log('Static files served from:', join(__dirname, '..', 'uploads'));
 
 @Module({
   imports: [
@@ -55,4 +54,4 @@ console.log('Static files served from:', join(__dirname, '..', 'uploads'));
     ReviewModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}
