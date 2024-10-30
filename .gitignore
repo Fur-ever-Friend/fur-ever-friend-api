@@ -67,7 +67,7 @@ docker-compose.yaml
 pnpm-lock.yaml
 
 #prisma
-/prisma/migrations
+# /prisma/migrations
 /prisma/seed.ts
 
 #uploads
