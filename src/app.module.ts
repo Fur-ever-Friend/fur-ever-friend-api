@@ -21,6 +21,7 @@ import {
   NotificationModule,
   ReviewModule,
 } from './modules';
+console.log('Static files served from:', join(__dirname, '..', 'uploads'));
 
 @Module({
   imports: [
@@ -33,14 +34,14 @@ import {
       }),
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/attachments/',
     }),
     ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     PetSitterModule,
-    ActivityModule, // only one instance
+    ActivityModule,
     PaymentModule,
     PetModule,
     RequestModule,
@@ -54,4 +55,4 @@ import {
     ReviewModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
