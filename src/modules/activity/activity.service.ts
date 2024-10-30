@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AnimalTypeService } from '../animal-type/animal-type.service';
 import { GLOBAL_CONSTS, validateAndConvertDateTimes, } from '@/common/utils';
 import { NotificationService } from '../notification/notification.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ActivityService {
@@ -19,6 +20,7 @@ export class ActivityService {
     private readonly prismaService: PrismaService,
     private readonly animalTypeService: AnimalTypeService,
     private readonly notificationService: NotificationService,
+    private readonly userService: UserService,
   ) { }
 
   @Cron('*/16 * * * * *', {
@@ -1593,6 +1595,33 @@ export class ActivityService {
     await this.prismaService.task.update({
       where: { id: taskId },
       data: { status },
+    });
+  }
+
+  async invitePetsitter(id: string, customerId: string, petsitterId: string) {
+    const activity = await this.prismaService.activity.findUnique({
+      where: { id },
+      select: { state: true, customerId: true },
+    });
+
+    if (!activity || activity.customerId !== customerId) {
+      throw new BadRequestException(`You are not authorized to invite a petsitter for this activity.`);
+    }
+
+    if (activity.state !== ActivityState.PENDING) {
+      throw new BadRequestException(`You can only invite a petsitter for an activity in the PENDING state.`);
+    }
+
+    const petsitter = await this.userService.getUserByIdWithoutCredential(petsitterId);
+
+    if (!petsitter || petsitter.role !== Role.PETSITTER) {
+      throw new BadRequestException(`Invalid petsitter ID`);
+    }
+
+    await this.notificationService.create({
+      title: 'Activity Invitation',
+      content: `You have been invited to a new activity.`,
+      userId: petsitterId,
     });
   }
 }
