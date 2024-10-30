@@ -132,7 +132,7 @@ export class FavouriteService {
                 role: true,
                 phone: true,
               },
-            }
+            },
           }
         },
         petsitter: {
@@ -148,6 +148,98 @@ export class FavouriteService {
                 accountStatus: true,
                 role: true,
                 phone: true,
+              },
+            },
+            reviews: {
+              select: {
+                id: true,
+                rating: true,
+                content: true,
+                customer: {
+                  select: {
+                    id: true,
+                    user: {
+                      select: {
+                        id: true,
+                        email: true,
+                        firstname: true,
+                        lastname: true,
+                        avatar: true,
+                        accountStatus: true,
+                        role: true,
+                        phone: true,
+                      },
+                    },
+                  },
+                },
+                activity: {
+                  select: {
+                    id: true,
+                    title: true,
+                    detail: true,
+                    price: true,
+                    startDateTime: true,
+                    endDateTime: true,
+                    pickupPoint: true,
+                    state: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    services: {
+                      select: {
+                        id: true,
+                        pet: {
+                          select: {
+                            id: true,
+                            name: true,
+                            age: true,
+                            gender: true,
+                            weight: true,
+                            allergy: true,
+                            imageUrl: true,
+                            otherDetail: true,
+                            personality: true,
+                            breed: {
+                              select: {
+                                id: true,
+                                name: true,
+                                animalType: {
+                                  select: {
+                                    id: true,
+                                    name: true,
+                                  },
+                                },
+                              },
+                            },
+                            animalType: {
+                              select: {
+                                id: true,
+                                name: true,
+                              },
+                            },
+                          },
+                        },
+                        tasks: {
+                          select: {
+                            id: true,
+                            createdAt: true,
+                            status: true,
+                            type: true,
+                            detail: true,
+                            activityServiceId: true,
+                          },
+                        },
+                      },
+                    },
+                    progresses: {
+                      select: {
+                        id: true,
+                        images: true,
+                        content: true,
+                        createdAt: true,
+                      },
+                    },
+                  },
+                }
               },
             }
           }
