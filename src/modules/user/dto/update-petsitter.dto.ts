@@ -1,6 +1,8 @@
 import { Role, ServiceType } from '@prisma/client';
 import { z } from "zod";
 
+const animalTypes = ['Dog', 'Cat', 'Rabbit', 'Hamster', 'Bird', 'Fish', 'Reptile', 'Other'] as const;
+
 export const UpdatePetsitterDtoSchema = z.object({
     password: z.string().min(6).optional(),
     firstname: z.string().min(1).max(30).optional(),
@@ -14,6 +16,7 @@ export const UpdatePetsitterDtoSchema = z.object({
         experience: z.string().optional(),
         coverImages: z.array(z.string()).optional(),
         serviceTags: z.nativeEnum(ServiceType).array().optional(),
+        petTags: z.enum(animalTypes).array().optional(),
     }).optional(),
 });
 

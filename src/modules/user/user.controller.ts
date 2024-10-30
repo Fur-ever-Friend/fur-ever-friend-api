@@ -27,8 +27,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UserService } from './user.service';
-import { SetUserStatusDto, UpdateCustomerSchema, UpdatePetsitterDto, UpdatePetsitterDtoSchema, UpdateUserDto, UpdateUserDtoSchema, UserQueryDto } from './dto';
-import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
+import { SetUserStatusDto, UpdateCustomerSchema, UpdatePetsitterDtoSchema, UpdateUserDtoSchema, UserQueryDto } from './dto';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
 
 @Controller('users')
 export class UserController {

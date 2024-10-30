@@ -181,6 +181,7 @@ export class UserService {
                         rating: true,
                         location: true,
                         serviceTags: true,
+                        petTags: true,
                         coverImages: true,
                         reviews: {
                             select: {
@@ -339,6 +340,7 @@ export class UserService {
                         rating: true,
                         location: true,
                         serviceTags: true,
+                        petTags: true,
                         coverImages: true,
                         activities: true,
                         reviews: {
@@ -439,6 +441,7 @@ export class UserService {
                                         rating: true,
                                         location: true,
                                         serviceTags: true,
+                                        petTags: true,
                                         coverImages: true,
                                         user: {
                                             select: {
@@ -470,6 +473,7 @@ export class UserService {
                         quote: true,
                         rating: true,
                         serviceTags: true,
+                        petTags: true,
                         reviews: {
                             select: {
                                 id: true,
@@ -699,6 +703,7 @@ export class UserService {
                             rating: true,
                             location: true,
                             serviceTags: true,
+                            petTags: true,
                             coverImages: true,
                             reviews: {
                                 select: {
