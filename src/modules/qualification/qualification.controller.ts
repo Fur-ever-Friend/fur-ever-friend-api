@@ -71,11 +71,10 @@ export class QualificationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':id')
   async updateQualification(@Param('id') id: string, @Body() updateQualificationStateDto: UpdateQualificationStateDto) {
-    const response = await this.qualificationService.updateQualification(id, updateQualificationStateDto.state);
+    await this.qualificationService.updateQualification(id, updateQualificationStateDto.state);
     return {
       statusCode: HttpStatus.OK,
       message: "Qualification updated successfully",
-      data: response
     }
   }
 
@@ -95,11 +94,10 @@ export class QualificationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   async deleteQualification(@Param('id') id: string) {
-    const response = await this.qualificationService.deleteQualification(id);
+    await this.qualificationService.deleteQualification(id);
     return {
       statusCode: HttpStatus.OK,
       message: "Qualification deleted successfully",
-      data: response
     }
   }
 }
