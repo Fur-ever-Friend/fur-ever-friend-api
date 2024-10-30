@@ -54,7 +54,7 @@ model PetsitterRequest {
   petsitter   Petsitter @relation(fields: [petsitterId], references: [id], onDelete: Cascade)
   petsitterId String    @map("petsitter_id")
 
-  @@map("Requests")
+  @@map("request")
 }
 
 model Task {

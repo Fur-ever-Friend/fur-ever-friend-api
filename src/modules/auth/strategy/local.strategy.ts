@@ -1,9 +1,8 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 import { AuthService } from '../auth.service';
-import { User } from '@prisma/client';
-import { LoginSchema } from '../dto';
+import { AccountState, User } from '@prisma/client';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -13,7 +12,13 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(email: string, password: string): Promise<Partial<User>> {
-        return this.authService.validateLogin(email, password);
+        const user = await this.authService.validateLogin(email, password);
+
+        if (user.accountStatus !== AccountState.ACTIVE) {
+            throw new ForbiddenException('Account is not active');
+        }
+
+        return user;
     }
 
 }

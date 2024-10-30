@@ -3,10 +3,10 @@ import {
     Body,
     Controller,
     Delete,
+    ForbiddenException,
     Get,
     HttpCode,
     HttpStatus,
-    NotFoundException,
     Param,
     Patch,
     Post,
@@ -19,7 +19,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Role, User } from '@prisma/client';
+import { AccountState, Role, User } from '@prisma/client';
 import { v4 as uuidV4 } from 'uuid';
 
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -27,8 +27,9 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { UserService } from './user.service';
-import { SetUserStatusDto, UpdateCustomerSchema, UpdatePetsitterDto, UpdatePetsitterDtoSchema, UpdateUserDto, UpdateUserDtoSchema, UserQueryDto } from './dto';
-import { checkFileNameEncoding, generateRandomFileName, handleError } from 'src/common/utils';
+import { SetUserStatusDto, UpdateCustomerSchema, UpdatePetsitterDtoSchema, UpdateUserDtoSchema, UserQueryDto } from './dto';
+import { checkFileNameEncoding, generateRandomFileName } from 'src/common/utils';
+import { PetsitterQueryDto } from './dto/petsitter-query-param.dto';
 
 @Controller('users')
 export class UserController {
@@ -63,10 +64,27 @@ export class UserController {
     @Get("me")
     getCurrentUser(@CurrentUser() user: User) {
         const { password, refreshToken, accountStatus, createdAt, ...rest } = user;
+
+        if (user.accountStatus !== AccountState.ACTIVE) {
+            throw new ForbiddenException('User is not active');
+        }
+
         return {
             statusCode: HttpStatus.OK,
             message: 'User retrieved successfully.',
             data: rest,
+        }
+    }
+
+    @Roles(Role.ADMIN, Role.CUSTOMER) // Get Petsitter
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Get('petsitter')
+    async getPetsitters(@Query() queryParams: PetsitterQueryDto) {
+        const petsitters = await this.userService.findAllPetsitters(queryParams);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Petsitters retrieved successfully.',
+            data: petsitters,
         }
     }
 
@@ -106,10 +124,7 @@ export class UserController {
     ) {
         if (!json) throw new BadRequestException('No JSON data provided');
         const jsonParse = JSON.parse(json);
-        const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
-        if (!validateData.success) throw new BadRequestException('Invalid Field');
-
-        const updatePetsitterDto = validateData.data as UpdatePetsitterDto;
+        const updatePetsitterDto = UpdatePetsitterDtoSchema.parse(jsonParse);
 
         if (files.avatar && files.avatar[0]) {
             updatePetsitterDto.avatar = files.avatar[0].filename;
@@ -172,10 +187,7 @@ export class UserController {
     ) {
         if (!json) throw new BadRequestException('No JSON data provided');
         const jsonParse = JSON.parse(json);
-        const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
-        if (!validateData.success) throw new BadRequestException('Invalid Field');
-
-        const updatePetsitterDto = validateData.data as UpdatePetsitterDto;
+        const updatePetsitterDto = UpdatePetsitterDtoSchema.parse(jsonParse);
 
         if (files.avatar && files.avatar[0]) {
             updatePetsitterDto.avatar = files.avatar[0].filename;
@@ -234,9 +246,7 @@ export class UserController {
         @UploadedFile() avatarFile: Express.Multer.File,
     ) {
         const jsonParse = JSON.parse(jsonStr);
-        const validateData = UpdateCustomerSchema.parse(jsonParse);
-
-        const updateUserDto = validateData as UpdatePetsitterDto;
+        const updateUserDto = UpdateCustomerSchema.parse(jsonParse);
 
         if (avatarFile) {
             updateUserDto.avatar = avatarFile.filename;
@@ -282,9 +292,7 @@ export class UserController {
         @UploadedFile() avatarFile: Express.Multer.File,
     ) {
         const jsonParse = JSON.parse(jsonStr);
-        const validateData = UpdateUserDtoSchema.parse(jsonParse);
-
-        const updateUserDto = validateData as UpdateUserDto;
+        const updateUserDto = UpdateUserDtoSchema.parse(jsonParse);
 
         if (avatarFile) {
             updateUserDto.avatar = avatarFile.filename;

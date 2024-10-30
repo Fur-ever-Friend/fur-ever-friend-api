@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { v4 as uuidV4 } from 'uuid';
-import { PaymentInfoDto } from '../request/dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentState } from '@prisma/client';
 import { CreatePaymentDto } from './dto/PaymentInfoDto.dto';
@@ -11,7 +10,10 @@ export class PaymentService {
     // Mock payment processing logic
     const success = Math.random() > 0.2; // Simulate a 80% success rate
 
-    const transactionId = success ? uuidV4() : undefined;
+    const transactionId = success ? uuidV4() : null;
+    if (!success) {
+      throw new BadRequestException('Payment failed');
+    }
     return { success, transactionId };
   }
 

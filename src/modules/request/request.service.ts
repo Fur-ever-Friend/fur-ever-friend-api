@@ -143,9 +143,6 @@ export class RequestService {
   }
 
   async acceptRequest(id: string, customerId: string) {
-    const minhalf = new Date();
-    minhalf.setMinutes(minhalf.getMinutes() + 1);
-    minhalf.setSeconds(30);
     const customer = await this.prismaService.customer.findUnique({
       where: { id: customerId },
     });
@@ -185,15 +182,19 @@ export class RequestService {
     const activity = await this.prismaService.activity.findUnique({
       where: {
         id: request.activityId,
-        startDateTime: { gte: minhalf },
       },
       select: {
         id: true,
+        state: true,
       },
     });
 
     if (!activity) {
-      throw new BadRequestException('The activity has already started or ended');
+      throw new BadRequestException('Activity not found');
+    }
+
+    if (activity.state !== ActivityState.PENDING) {
+      throw new BadRequestException('The activity is not pending');
     }
 
     const payment = await this.paymentService.createPayment({ activityId: request.activityId, amount: request.price });
