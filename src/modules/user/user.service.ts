@@ -20,6 +20,7 @@ export class UserService {
                 sortOrder = SortOrder.ASC,
                 sortBy = SortBy.ID,
                 role,
+                accountState,
                 page = 1,
                 limit = 10,
             } = query;
@@ -32,6 +33,10 @@ export class UserService {
                 where['role'] = {
                     not: Role.ADMIN
                 }
+            }
+
+            if (accountState) {
+                where['accountStatus'] = accountState;
             }
 
             if (search && searchType) {

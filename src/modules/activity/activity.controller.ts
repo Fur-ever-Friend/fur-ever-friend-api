@@ -36,6 +36,7 @@ import { checkFileNameEncoding, generateRandomFileName } from '@/common/utils';
 import { Id } from '@/common/global-dtos/id-query.dto';
 import { ActivityQueryDto } from './dto/request/activity-query.dto';
 import { ActivityPetsitterQueryDto } from './dto/request/activity-petsitter-query.dto';
+import { InvitePetsitterDto } from './dto/request/invite-petsitter.dto';
 
 @ApiTags('activities')
 @ApiBearerAuth()
@@ -207,6 +208,17 @@ export class ActivityController {
       statusCode: HttpStatus.OK,
       message: "Task state updated successfully.",
       data: result
+    }
+  }
+
+  @Roles(Role.CUSTOMER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/invite')
+  async invitePetsitter(@Param() { id }: Id, @CurrentUser() user: User, @Body() { petsitterId }: InvitePetsitterDto) {
+    await this.activityService.invitePetsitter(id, user["customer"]["id"], petsitterId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: "Petsitter invited successfully.",
     }
   }
 }
