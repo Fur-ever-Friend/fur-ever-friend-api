@@ -18,5 +18,6 @@ export const getCorsOptions = (allowedOrigins: string[]): CorsOptions => {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     optionsSuccessStatus: 200,
     exposedHeaders: 'Authorization',
+    credentials: true,
   };
 };
