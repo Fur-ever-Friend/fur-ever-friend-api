@@ -3,10 +3,10 @@ import {
     Body,
     Controller,
     Delete,
+    ForbiddenException,
     Get,
     HttpCode,
     HttpStatus,
-    NotFoundException,
     Param,
     Patch,
     Post,
@@ -19,7 +19,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Role, User } from '@prisma/client';
+import { AccountState, Role, User } from '@prisma/client';
 import { v4 as uuidV4 } from 'uuid';
 
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -63,6 +63,11 @@ export class UserController {
     @Get("me")
     getCurrentUser(@CurrentUser() user: User) {
         const { password, refreshToken, accountStatus, createdAt, ...rest } = user;
+
+        if (user.accountStatus !== AccountState.ACTIVE) {
+            throw new ForbiddenException('User is not active');
+        }
+
         return {
             statusCode: HttpStatus.OK,
             message: 'User retrieved successfully.',

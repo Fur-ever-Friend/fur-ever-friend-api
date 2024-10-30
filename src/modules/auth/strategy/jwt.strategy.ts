@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../dto';
 import { Request } from 'express';
 import { AuthService } from '../auth.service';
-import { User } from '@prisma/client';
+import { AccountState, User } from '@prisma/client';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -19,6 +19,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     async validate(payload: JwtPayload): Promise<Partial<User>> {
-        return this.authService.validateUser(payload);
+        const user = await this.authService.validateUser(payload);
+
+        if (user.accountStatus !== AccountState.ACTIVE) {
+            throw new ForbiddenException('Account is not active');
+        }
+
+        return user;
     }
 }

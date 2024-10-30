@@ -156,102 +156,108 @@ export class UserService {
     }
 
     async getUserByIdWithoutCredential(userId: string) {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: {
-                    id: userId,
-                    accountStatus: AccountState.ACTIVE
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                id: userId,
+                accountStatus: AccountState.ACTIVE
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                phone: true,
+                role: true,
+                avatar: true,
+                accountStatus: true,
+                createdAt: true,
+                petsitter: {
+                    select: {
+                        id: true,
+                        certificateUrl: true,
+                        about: true,
+                        experience: true,
+                        quote: true,
+                        rating: true,
+                        location: true,
+                        serviceTags: true,
+                        coverImages: true,
+                        reviews: {
+                            select: {
+                                id: true,
+                                content: true,
+                                rating: true,
+                                createdAt: true,
+                                activityId: true,
+                                customer: {
+                                    select: {
+                                        id: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        },
+                    }
                 },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    phone: true,
-                    role: true,
-                    avatar: true,
-                    accountStatus: true,
-                    petsitter: {
-                        select: {
-                            id: true,
-                            certificateUrl: true,
-                            about: true,
-                            experience: true,
-                            quote: true,
-                            rating: true,
-                            location: true,
-                            serviceTags: true,
-                            coverImages: true,
-                            reviews: {
-                                select: {
-                                    id: true,
-                                    content: true,
-                                    rating: true,
-                                    createdAt: true,
-                                    activityId: true,
-                                    customer: {
-                                        select: {
-                                            id: true,
-                                            user: {
-                                                select: {
-                                                    id: true,
-                                                    firstname: true,
-                                                    lastname: true,
-                                                    avatar: true,
-                                                    email: true,
-                                                }
+                customer: {
+                    select: {
+                        id: true,
+                        activities: true,
+                        pets: {
+                            select: {
+                                id: true,
+                                name: true,
+                                age: true,
+                                imageUrl: true,
+                                gender: true,
+                                weight: true,
+                                allergy: true,
+                                personality: true,
+                                otherDetail: true,
+                                animalType: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                    }
+                                },
+                                breed: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        animalType: {
+                                            select: {
+                                                id: true,
+                                                name: true,
                                             }
                                         }
                                     }
                                 },
                             },
                         }
-                    },
-                    customer: {
-                        select: {
-                            id: true,
-                            activities: true,
-                            pets: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    age: true,
-                                    imageUrl: true,
-                                    gender: true,
-                                    weight: true,
-                                    allergy: true,
-                                    personality: true,
-                                    otherDetail: true,
-                                    animalType: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        }
-                                    },
-                                    breed: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        }
-                                    },
-                                },
-                            }
-                        }
-                    },
+                    }
                 },
-            });
-            switch (user.role) {
-                case Role.CUSTOMER:
-                    delete user.petsitter;
-                    break;
-                case Role.PETSITTER:
-                    delete user.customer;
-                    break;
-            }
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.getUserByIdWithoutCredential', 'user');
+            },
+        });
+        switch (user.role) {
+            case Role.CUSTOMER:
+                delete user.petsitter;
+                break;
+            case Role.PETSITTER:
+                delete user.customer;
+                break;
         }
+
+        if (!user) throw new NotFoundException("User not found");
+
+        return user;
     }
 
     async getRefreshToken(userId: string): Promise<string | null> {
@@ -267,251 +273,247 @@ export class UserService {
 
             return refreshToken;
         } catch (err: unknown) {
-            handleError(err, 'userService.getRefreshToken');
+            handleError(err, 'userService.getRefreshToken', 'refresh token');
         }
     }
 
     async getUserByIdWithDetails(userId: string): Promise<Partial<User>> {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: {
-                    id: userId,
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                id: userId,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                avatar: true,
+                phone: true,
+                role: true,
+                refreshToken: true,
+                accountStatus: true,
+                createdAt: true,
+                customer: {
+                    select: {
+                        id: true,
+                        activities: true,
+                        pets: true,
+                        favourites: {
+                            select: {
+                                id: true,
+                                petsitter: {
+                                    select: {
+                                        id: true,
+                                        about: true,
+                                        experience: true,
+                                        quote: true,
+                                        rating: true,
+                                        location: true,
+                                        serviceTags: true,
+                                        coverImages: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
+                                                phone: true,
+                                                role: true,
+                                                accountStatus: true,
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                 },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    avatar: true,
-                    phone: true,
-                    role: true,
-                    refreshToken: true,
-                    accountStatus: true,
-                    createdAt: true,
-                    customer: {
-                        select: {
-                            id: true,
-                            activities: true,
-                            pets: true,
-                            favourites: {
-                                select: {
-                                    id: true,
-                                    petsitter: {
-                                        select: {
-                                            id: true,
-                                            about: true,
-                                            experience: true,
-                                            quote: true,
-                                            rating: true,
-                                            location: true,
-                                            serviceTags: true,
-                                            coverImages: true,
-                                            user: {
-                                                select: {
-                                                    id: true,
-                                                    firstname: true,
-                                                    lastname: true,
-                                                    avatar: true,
-                                                    email: true,
-                                                    phone: true,
-                                                    role: true,
-                                                    accountStatus: true,
-                                                }
+                petsitter: {
+                    select: {
+                        id: true,
+                        certificateUrl: true,
+                        about: true,
+                        experience: true,
+                        quote: true,
+                        rating: true,
+                        location: true,
+                        serviceTags: true,
+                        coverImages: true,
+                        activities: true,
+                        reviews: {
+                            select: {
+                                id: true,
+                                createdAt: true,
+                                content: true,
+                                rating: true,
+                                activityId: true,
+                                customer: {
+                                    select: {
+                                        id: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
                                             }
                                         }
                                     }
                                 }
                             }
                         },
-                    },
-                    petsitter: {
-                        select: {
-                            id: true,
-                            certificateUrl: true,
-                            about: true,
-                            experience: true,
-                            quote: true,
-                            rating: true,
-                            location: true,
-                            serviceTags: true,
-                            coverImages: true,
-                            activities: true,
-                            reviews: {
-                                select: {
-                                    id: true,
-                                    createdAt: true,
-                                    content: true,
-                                    rating: true,
-                                    activityId: true,
-                                    customer: {
-                                        select: {
-                                            id: true,
-                                            user: {
-                                                select: {
-                                                    id: true,
-                                                    firstname: true,
-                                                    lastname: true,
-                                                    avatar: true,
-                                                    email: true,
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                        }
                     }
-                },
-            });
+                }
+            },
+        });
 
-            switch (user.role) {
-                case Role.CUSTOMER:
-                    delete user.petsitter;
-                    break;
-                case Role.PETSITTER:
-                    delete user.customer;
-                    break;
-            }
+        if (!user) throw new NotFoundException("User not found");
 
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.getUserByIdWithDetails', 'user');
+        switch (user.role) {
+            case Role.CUSTOMER:
+                delete user.petsitter;
+                break;
+            case Role.PETSITTER:
+                delete user.customer;
+                break;
         }
+
+        return user;
     }
 
     async getUserByEmail(email: string): Promise<Partial<User>> {
-        try {
-            const user = await this.prismaService.user.findUniqueOrThrow({
-                where: {
-                    email,
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    firstname: true,
-                    lastname: true,
-                    password: true,
-                    phone: true,
-                    role: true,
-                    avatar: true,
-                    accountStatus: true,
-                    customer: {
-                        select: {
-                            id: true,
-                            activities: true,
-                            pets: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    age: true,
-                                    allergy: true,
-                                    gender: true,
-                                    imageUrl: true,
-                                    weight: true,
-                                    personality: true,
-                                    otherDetail: true,
-                                    breed: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                            animalType: {
-                                                select: {
-                                                    id: true,
-                                                    name: true,
-                                                }
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                email,
+            },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                password: true,
+                phone: true,
+                role: true,
+                avatar: true,
+                accountStatus: true,
+                customer: {
+                    select: {
+                        id: true,
+                        activities: true,
+                        pets: {
+                            select: {
+                                id: true,
+                                name: true,
+                                age: true,
+                                allergy: true,
+                                gender: true,
+                                imageUrl: true,
+                                weight: true,
+                                personality: true,
+                                otherDetail: true,
+                                breed: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        animalType: {
+                                            select: {
+                                                id: true,
+                                                name: true,
                                             }
                                         }
-                                    },
-                                }
-                            },
-                            favourites: {
-                                select: {
-                                    id: true,
-                                    petsitter: {
-                                        select: {
-                                            id: true,
-                                            about: true,
-                                            experience: true,
-                                            quote: true,
-                                            rating: true,
-                                            location: true,
-                                            serviceTags: true,
-                                            coverImages: true,
-                                            user: {
-                                                select: {
-                                                    id: true,
-                                                    firstname: true,
-                                                    lastname: true,
-                                                    avatar: true,
-                                                    email: true,
-                                                    phone: true,
-                                                    role: true,
-                                                    accountStatus: true,
-                                                }
+                                    }
+                                },
+                            }
+                        },
+                        favourites: {
+                            select: {
+                                id: true,
+                                petsitter: {
+                                    select: {
+                                        id: true,
+                                        about: true,
+                                        experience: true,
+                                        quote: true,
+                                        rating: true,
+                                        location: true,
+                                        serviceTags: true,
+                                        coverImages: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
+                                                phone: true,
+                                                role: true,
+                                                accountStatus: true,
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    },
-                    petsitter: {
-                        select: {
-                            id: true,
-                            about: true,
-                            activities: true,
-                            certificateUrl: true,
-                            coverImages: true,
-                            experience: true,
-                            location: true,
-                            quote: true,
-                            rating: true,
-                            serviceTags: true,
-                            reviews: {
-                                select: {
-                                    id: true,
-                                    content: true,
-                                    rating: true,
-                                    createdAt: true,
-                                    activityId: true,
-                                    customer: {
-                                        select: {
-                                            id: true,
-                                            user: {
-                                                select: {
-                                                    id: true,
-                                                    firstname: true,
-                                                    lastname: true,
-                                                    avatar: true,
-                                                    email: true,
-                                                }
+                    }
+                },
+                petsitter: {
+                    select: {
+                        id: true,
+                        about: true,
+                        activities: true,
+                        certificateUrl: true,
+                        coverImages: true,
+                        experience: true,
+                        location: true,
+                        quote: true,
+                        rating: true,
+                        serviceTags: true,
+                        reviews: {
+                            select: {
+                                id: true,
+                                content: true,
+                                rating: true,
+                                createdAt: true,
+                                activityId: true,
+                                customer: {
+                                    select: {
+                                        id: true,
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                firstname: true,
+                                                lastname: true,
+                                                avatar: true,
+                                                email: true,
                                             }
                                         }
                                     }
                                 }
-                            },
-                        }
-                    },
-                }
-            });
-
-            switch (user.role) {
-                case Role.CUSTOMER:
-                    delete user.petsitter;
-                    break;
-                case Role.PETSITTER:
-                    delete user.customer;
-                    break;
-                case Role.ADMIN:
-                    delete user.customer;
-                    delete user.petsitter;
-                    break;
+                            }
+                        },
+                    }
+                },
             }
+        });
 
-            return user;
-        } catch (err: unknown) {
-            handleError(err, 'userService.getUserByEmail', 'user');
+        if (!user) throw new NotFoundException("User not found");
+
+        switch (user.role) {
+            case Role.CUSTOMER:
+                delete user.petsitter;
+                break;
+            case Role.PETSITTER:
+                delete user.customer;
+                break;
+            case Role.ADMIN:
+                delete user.customer;
+                delete user.petsitter;
+                break;
         }
+
+        return user;
     }
 
     async getUserByCustomerId(customerId: string): Promise<Partial<Customer>> {
@@ -686,6 +688,7 @@ export class UserService {
                     role: true,
                     avatar: true,
                     accountStatus: true,
+                    createdAt: true,
                     petsitter: {
                         select: {
                             id: true,
