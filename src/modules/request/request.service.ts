@@ -7,6 +7,7 @@ import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { title } from 'process';
 
 @Injectable()
 export class RequestService {
@@ -83,7 +84,7 @@ export class RequestService {
     });
   }
 
-  async getRequestsByPetsitter(id: string): Promise<GetRequestResponseDto[]> {
+  async getRequestsByPetsitter(id: string) {
     const petsitter = await this.prismaService.petsitter.findUnique({
       where: { id },
     });
@@ -125,12 +126,82 @@ export class RequestService {
                 },
               },
             },
+            state: true,
+            services: {
+              select: {
+                id: true,
+                pet: {
+                  select: {
+                    id: true,
+                    name: true,
+                    age: true,
+                    gender: true,
+                    imageUrl: true,
+                    personality: true,
+                    allergy: true,
+                    otherDetail: true,
+                    breed: {
+                      select: {
+                        id: true,
+                        name: true,
+                        animalType: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        }
+                      },
+                    },
+                    animalType: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                    weight: true,
+                  },
+                },
+                tasks: {
+                  select: {
+                    id: true,
+                    activityServiceId: true,
+                    createdAt: true,
+                    detail: true,
+                    type: true,
+                    status: true,
+                  },
+                },
+              },
+            },
           },
         },
       }
     });
 
-    return requests.map(GetRequestResponseDto.formatRequestResponse);
+    const formattedRequests = requests.map((request) => {
+      return {
+        id: request.activity.id,
+        title: request.activity.title,
+        price: request.activity.price,
+        detail: request.activity.detail,
+        startDateTime: request.activity.startDateTime,
+        endDateTime: request.activity.endDateTime,
+        pickupPoint: request.activity.pickupPoint,
+        createdAt: request.activity.createdAt,
+        customer: request.activity.customer.user,
+        state: request.activity.state,
+        services: request.activity.services,
+        request: {
+          id: request.id,
+          price: request.price,
+          message: request.message,
+          state: request.state,
+          createdAt: request.createdAt,
+        },
+      };
+    });
+
+    return formattedRequests;
   }
 
   async getRequestsByActivity(activityId: string): Promise<GetRequestResponseDto[]> {

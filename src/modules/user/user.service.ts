@@ -622,7 +622,7 @@ export class UserService {
             const createPetsitter = {
                 ...rest,
                 role: Role.PETSITTER,
-            } satisfies CreatePetsitterDto;
+            } as CreatePetsitterDto;
 
             const user = await this.prismaService.$transaction(async (prisma) => {
                 const user = await prisma.user.create({
