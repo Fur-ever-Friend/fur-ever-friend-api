@@ -11,6 +11,7 @@ model Petsitter {
   coverImages    String[]   @map("cover_images")
   activities     Activity[]
   serviceTags    String[]   @map("service_tags")
+  petTags        String[]   @map("pet_tags")
 
   requests   PetsitterRequest[]
   favourites Favourite[]
