@@ -36,8 +36,8 @@ export function validateDateTimes2(startDateTime: Date, endDateTime: Date): void
 
 export function validateDateTimes(startDateTime: Date, endDateTime: Date): void {
   const now = new Date();
-  const twoMinFromNow = new Date(now.getTime() + 2 * 60 * 1000);
-  const min = 5 * 60 * 1000;
+  const twoMinFromNow = new Date(now.getTime() + 3 * 60 * 1000);
+  const min = 10 * 60 * 1000;
   const max = 60 * 60 * 1000;
 
   if (endDateTime < startDateTime) {
@@ -51,7 +51,7 @@ export function validateDateTimes(startDateTime: Date, endDateTime: Date): void 
   }
   const duration = endDateTime.getTime() - startDateTime.getTime();
   if (duration < min || duration > max) {
-    throw new BadRequestException('The duration of the activity must be between 5 mins and 1 hour.');
+    throw new BadRequestException('The duration of the activity must be between 10 mins and 1 hour.');
   }
 }
 

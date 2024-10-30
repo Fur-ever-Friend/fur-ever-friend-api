@@ -139,7 +139,7 @@ export class ActivityService {
       }
 
     } catch (err: unknown) {
-      console.error('Error in cron job:', err);
+      // console.error('Error in cron job:', err);
     }
   }
 
@@ -347,7 +347,7 @@ export class ActivityService {
     try {
       // if startDateTime <= now - 2 minutes and state = PENDING, then update state to CANCELLED
       const afterTwoMins = new Date();
-      afterTwoMins.setMinutes(afterTwoMins.getMinutes() - 3); // 1 minutes later
+      afterTwoMins.setMinutes(afterTwoMins.getMinutes() - 10); // 10 minutes later
       const updatedRecords = await this.prismaService.activity.updateMany({
         where: {
           AND: [
@@ -456,7 +456,7 @@ export class ActivityService {
       }
 
     } catch (err: unknown) {
-      console.error('Error in cron job:', err);
+      // console.error('Error in cron job:', err);
     }
   }
 
