@@ -18,6 +18,7 @@ export class NotificationService {
         title: true,
         content: true,
         userId: true,
+        createdAt: true,
       }
     });
   }
@@ -29,6 +30,7 @@ export class NotificationService {
         title: true,
         content: true,
         userId: true,
+        createdAt: true,
       }
     });
 
@@ -43,6 +45,7 @@ export class NotificationService {
         title: true,
         content: true,
         userId: true,
+        createdAt: true,
       }
     });
 
@@ -57,6 +60,7 @@ export class NotificationService {
         title: true,
         content: true,
         userId: true,
+        createdAt: true,
       }
     });
 
