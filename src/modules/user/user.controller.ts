@@ -111,10 +111,7 @@ export class UserController {
     ) {
         if (!json) throw new BadRequestException('No JSON data provided');
         const jsonParse = JSON.parse(json);
-        const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
-        if (!validateData.success) throw new BadRequestException('Invalid Field');
-
-        const updatePetsitterDto = validateData.data as UpdatePetsitterDto;
+        const updatePetsitterDto = UpdatePetsitterDtoSchema.parse(jsonParse);
 
         if (files.avatar && files.avatar[0]) {
             updatePetsitterDto.avatar = files.avatar[0].filename;
@@ -177,10 +174,7 @@ export class UserController {
     ) {
         if (!json) throw new BadRequestException('No JSON data provided');
         const jsonParse = JSON.parse(json);
-        const validateData = UpdatePetsitterDtoSchema.safeParse(jsonParse);
-        if (!validateData.success) throw new BadRequestException('Invalid Field');
-
-        const updatePetsitterDto = validateData.data as UpdatePetsitterDto;
+        const updatePetsitterDto = UpdatePetsitterDtoSchema.parse(jsonParse);
 
         if (files.avatar && files.avatar[0]) {
             updatePetsitterDto.avatar = files.avatar[0].filename;
@@ -239,9 +233,7 @@ export class UserController {
         @UploadedFile() avatarFile: Express.Multer.File,
     ) {
         const jsonParse = JSON.parse(jsonStr);
-        const validateData = UpdateCustomerSchema.parse(jsonParse);
-
-        const updateUserDto = validateData as UpdatePetsitterDto;
+        const updateUserDto = UpdateCustomerSchema.parse(jsonParse);
 
         if (avatarFile) {
             updateUserDto.avatar = avatarFile.filename;
@@ -287,9 +279,7 @@ export class UserController {
         @UploadedFile() avatarFile: Express.Multer.File,
     ) {
         const jsonParse = JSON.parse(jsonStr);
-        const validateData = UpdateUserDtoSchema.parse(jsonParse);
-
-        const updateUserDto = validateData as UpdateUserDto;
+        const updateUserDto = UpdateUserDtoSchema.parse(jsonParse);
 
         if (avatarFile) {
             updateUserDto.avatar = avatarFile.filename;
