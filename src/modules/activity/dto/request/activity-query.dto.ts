@@ -1,4 +1,4 @@
-import { ServiceType } from "@prisma/client";
+import { ActivityState, ServiceType } from "@prisma/client";
 import { Type } from "class-transformer";
 import { IsDate, IsEnum, IsOptional, IsUUID, Min } from "class-validator";
 
