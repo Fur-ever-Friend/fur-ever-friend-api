@@ -139,6 +139,7 @@ export class FavouriteService {
         petsitter: {
           select: {
             id: true,
+            rating: true,
             activities: {
               select: {
                 id: true,
