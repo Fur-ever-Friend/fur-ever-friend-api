@@ -82,7 +82,7 @@ export class QualificationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   async getQualification(@Param('id') id: string) {
-    const response = await this.qualificationService.getQualificationById(id);
+    const {password, ...response} = await this.qualificationService.getQualificationById(id);
     return {
       statusCode: HttpStatus.OK,
       message: "Qualification retrieved successfully",

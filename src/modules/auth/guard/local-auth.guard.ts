@@ -13,8 +13,6 @@ export class LocalAuthGuard extends AuthGuard('local') {
             password: request.body.password
         })
 
-        console.log("authValidation", authValidation);
-
         return super.canActivate(context);
     }
 }
