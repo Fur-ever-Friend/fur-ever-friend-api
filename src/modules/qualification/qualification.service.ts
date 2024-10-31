@@ -44,6 +44,7 @@ export class QualificationService {
             select: {
                 id: true,
                 email: true,
+                password: true,
                 firstname: true,
                 lastname: true,
                 state: true,

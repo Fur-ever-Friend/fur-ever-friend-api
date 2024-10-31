@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AccountState, Customer, Petsitter, Prisma, Role, State, User } from '@prisma/client';
+import { AccountState, ActivityState, Customer, Petsitter, Prisma, Role, State, User } from '@prisma/client';
 import { handleError, hashPassword, allowFieldUpdate } from 'src/common/utils';
 import { QualificationService } from 'src/modules/qualification/qualification.service';
 import { CreatePetsitterDto, CreateUserDto, SearchType, SortBy, SortOrder, UpdateCustomerDto, UpdatePetsitterDto, UpdateUserDto, UserQueryDto } from './dto';
@@ -184,13 +184,30 @@ export class UserService {
                         serviceTags: true,
                         petTags: true,
                         coverImages: true,
+                        activities: {
+                            select: {
+                                id: true,
+                                title: true,
+                                detail: true,
+                                state: true,
+                                customerId: true,
+                            }
+                        },
                         reviews: {
                             select: {
                                 id: true,
                                 content: true,
                                 rating: true,
                                 createdAt: true,
-                                activityId: true,
+                                activity: {
+                                    select: {
+                                        id: true,
+                                        title: true,
+                                        detail: true,
+                                        state: true,
+                                        customerId: true,
+                                    }
+                                },
                                 customer: {
                                     select: {
                                         id: true,
@@ -279,7 +296,7 @@ export class UserService {
         }
     }
 
-    async getUserByIdWithDetails(userId: string): Promise<Partial<User>> {
+    async getUserByIdWithDetails(userId: string): Promise<any> {
         const user = await this.prismaService.user.findUnique({
             where: {
                 id: userId,
@@ -343,7 +360,15 @@ export class UserService {
                         serviceTags: true,
                         petTags: true,
                         coverImages: true,
-                        activities: true,
+                        activities: {
+                            select: {
+                                id: true,
+                                title: true,
+                                detail: true,
+                                state: true,
+                                customerId: true,
+                            },
+                        },
                         reviews: {
                             select: {
                                 id: true,
@@ -466,7 +491,15 @@ export class UserService {
                     select: {
                         id: true,
                         about: true,
-                        activities: true,
+                        activities: {
+                            select: {
+                                id: true,
+                                title: true,
+                                detail: true,
+                                state: true,
+                                customerId: true,
+                            },
+                        },
                         certificateUrl: true,
                         coverImages: true,
                         experience: true,
@@ -618,7 +651,6 @@ export class UserService {
         try {
             const { id, state, certificateUrl, createdAt, ...rest } = await this.qualificationService.getQualification(email);
             if (state !== State.PENDING) throw new BadRequestException('Qualification is not pending');
-
             const createPetsitter = {
                 ...rest,
                 role: Role.PETSITTER,
@@ -706,6 +738,15 @@ export class UserService {
                             serviceTags: true,
                             petTags: true,
                             coverImages: true,
+                            activities: {
+                                select: {
+                                    id: true,
+                                    title: true,
+                                    detail: true,
+                                    state: true,
+                                    customerId: true,
+                                }
+                            },
                             reviews: {
                                 select: {
                                     id: true,
@@ -809,6 +850,15 @@ export class UserService {
                         serviceTags: true,
                         petTags: true,
                         coverImages: true,
+                        activities: {
+                            select: {
+                                id: true,
+                                title: true,
+                                detail: true,
+                                state: true,
+                                customerId: true,
+                            }
+                        },
                         reviews: {
                             select: {
                                 id: true,
