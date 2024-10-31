@@ -3,6 +3,7 @@ import { CreateFavouriteDto } from './dto/create-favourite.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
 import { handleError } from '@/common/utils';
+import { ActivityState } from '@prisma/client';
 
 @Injectable()
 export class FavouriteService {
@@ -114,7 +115,7 @@ export class FavouriteService {
 
   async findAllByCustomer(customerId: string) {
     await this.userService.getUserByCustomerId(customerId);
-    return this.prismaService.favourite.findMany({
+    const favorites = await this.prismaService.favourite.findMany({
       where: { customerId },
       select: {
         id: true,
@@ -138,6 +139,16 @@ export class FavouriteService {
         petsitter: {
           select: {
             id: true,
+            activities: {
+              select: {
+                id: true,
+                title: true,
+                detail: true,
+                state: true,
+                createdAt: true,
+                customerId: true,
+              },
+            },
             user: {
               select: {
                 id: true,
@@ -239,13 +250,16 @@ export class FavouriteService {
                       },
                     },
                   },
-                }
+                },
               },
             }
           }
         }
       }
     });
+
+    const activityDone = favorites.map((favorites) => favorites.petsitter.activities.filter((activity) => activity.state === ActivityState.COMPLETED));
+    return favorites;
   }
 
   async remove(id: string, customerId: string) {
