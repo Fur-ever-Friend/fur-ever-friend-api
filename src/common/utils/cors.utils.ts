@@ -9,7 +9,7 @@ export const getCorsOptions = (allowedOrigins: string[]): CorsOptions => {
 
   return {
     origin: (origin, callback) => {
-      if (allowedOriginRegexes.some(regex => regex.test(origin))) {
+      if (!origin || allowedOriginRegexes.some(regex => regex.test(origin))) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
