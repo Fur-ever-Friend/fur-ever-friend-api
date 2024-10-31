@@ -651,7 +651,6 @@ export class UserService {
         try {
             const { id, state, certificateUrl, createdAt, ...rest } = await this.qualificationService.getQualification(email);
             if (state !== State.PENDING) throw new BadRequestException('Qualification is not pending');
-
             const createPetsitter = {
                 ...rest,
                 role: Role.PETSITTER,
