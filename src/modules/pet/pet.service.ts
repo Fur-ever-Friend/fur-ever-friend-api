@@ -255,7 +255,7 @@ export class PetService {
             if (!breed) {
                 throw new NotFoundException("Breed not found");
             }
-            if (data.animalTypeId && breed.animalTypeId !== data.animalTypeId) {
+            if (data.animalTypeId && breed["animalType"]["id"] !== data.animalTypeId) {
                 throw new NotFoundException("Breed does not match animal type");
             }
         }
