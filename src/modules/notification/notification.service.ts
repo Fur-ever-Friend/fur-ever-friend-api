@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
   async create(createNotificationDto: CreateNotificationDto) {
     const { title, content, userId } = createNotificationDto;
     return this.prismaService.notification.create({
@@ -19,7 +19,7 @@ export class NotificationService {
         content: true,
         userId: true,
         createdAt: true,
-      }
+      },
     });
   }
 
@@ -31,7 +31,8 @@ export class NotificationService {
         content: true,
         userId: true,
         createdAt: true,
-      }
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
     return notifications;
@@ -46,7 +47,8 @@ export class NotificationService {
         content: true,
         userId: true,
         createdAt: true,
-      }
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
     return notifications;
@@ -61,7 +63,7 @@ export class NotificationService {
         content: true,
         userId: true,
         createdAt: true,
-      }
+      },
     });
 
     if (!notification) {
@@ -79,7 +81,7 @@ export class NotificationService {
         title: true,
         content: true,
         userId: true,
-      }
+      },
     });
 
     if (!notification) {
@@ -88,5 +90,4 @@ export class NotificationService {
 
     return notification;
   }
-
 }

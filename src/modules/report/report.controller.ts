@@ -10,7 +10,7 @@ import {
   UploadedFiles,
   HttpStatus,
   Query,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -27,9 +27,7 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @Controller('reports')
 export class ReportController {
-  constructor(
-    private readonly reportService: ReportService,
-  ) { }
+  constructor(private readonly reportService: ReportService) {}
 
   @Roles(Role.ADMIN, Role.CUSTOMER, Role.PETSITTER)
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,13 +38,12 @@ export class ReportController {
         destination: './uploads',
         filename: (_, file, callback) => {
           const [originalFilename, fileExt] = file.originalname.split('.');
-          const extension = file.mimetype.split("/")[1];
+          const extension = file.mimetype.split('/')[1];
           const id = uuidV4();
           let filename: string;
           if (!checkFileNameEncoding(originalFilename))
             filename = `${id}-${generateRandomFileName()}.${extension}`;
-          else
-            filename = `${originalFilename}-${id}.${fileExt}`;
+          else filename = `${originalFilename}-${id}.${fileExt}`;
           callback(null, filename);
         },
       }),
@@ -61,26 +58,28 @@ export class ReportController {
     }),
   )
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body('json') jsonStr: string, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() user: User) {
+  async create(
+    @Body('json') jsonStr: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: User,
+  ) {
     try {
       const jsonParsed = JSON.parse(jsonStr);
       const createReportDto = CreateReportSchema.parse(jsonParsed);
       if (user.role !== Role.ADMIN) {
-        console.log(createReportDto.reporterId, user.id);
-        console.log(user);
         if (createReportDto.reporterId !== user.id) {
-          throw new BadRequestException("You are not allowed to report on behalf of another user.");
+          throw new BadRequestException('You are not allowed to report on behalf of another user.');
         }
       }
-      const reportImages = files.map((file) => file.filename);
+      const reportImages = files.map(file => file.filename);
       const response = await this.reportService.create(createReportDto, reportImages);
       return {
         statusCode: HttpStatus.CREATED,
-        message: "Report created successfully.",
+        message: 'Report created successfully.',
         data: response,
-      }
+      };
     } catch (err: unknown) {
-      handleError(err, "ReportController.create", "report");
+      handleError(err, 'ReportController.create', 'report');
     }
   }
 
@@ -91,9 +90,9 @@ export class ReportController {
     const result = await this.reportService.findAll(reportQueryDto);
     return {
       statusCode: HttpStatus.OK,
-      message: "Reports retrieved successfully.",
+      message: 'Reports retrieved successfully.',
       data: result,
-    }
+    };
   }
 
   @Roles(Role.ADMIN)
@@ -103,9 +102,8 @@ export class ReportController {
     const result = await this.reportService.findOne(id);
     return {
       statusCode: HttpStatus.OK,
-      message: "Report retrieved successfully.",
+      message: 'Report retrieved successfully.',
       data: result,
-    }
+    };
   }
-
 }

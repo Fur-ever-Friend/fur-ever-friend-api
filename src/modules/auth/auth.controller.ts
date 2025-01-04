@@ -1,4 +1,15 @@
-import { Controller, Post, Req, UseGuards, Res, HttpCode, HttpStatus, Body, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+  Res,
+  HttpCode,
+  HttpStatus,
+  Body,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { User } from '@prisma/client';
 
@@ -10,23 +21,29 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
-    const { token, user } = await this.authService.register(createUserDto)
-    res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60 })
-    res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7 })
+    const { token, user } = await this.authService.register(createUserDto);
+    res.cookie('accessToken', token.accessToken, {
+      httpOnly: true,
+      maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60,
+    });
+    res.cookie('refreshToken', token.refreshToken, {
+      httpOnly: true,
+      maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7,
+    });
     return res.json({
       statusCode: HttpStatus.CREATED,
-      message: "Welcome aboard! Your account has been created successfully.",
+      message: 'Welcome aboard! Your account has been created successfully.',
       data: {
         user,
         token: {
           accessToken: token.accessToken,
-        }
-      }
+        },
+      },
     });
   }
 
@@ -35,12 +52,18 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request, @Res() res: Response) {
     const { id: userId, role, createdAt, ...otherFields } = req.user as Partial<User>;
-    const { accessToken, refreshToken } = await this.authService.login({ userId, role })
-    res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60 })
-    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7 })
+    const { accessToken, refreshToken } = await this.authService.login({ userId, role });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      maxAge: parseInt(process.env.COOKIE_ACCESS_EXPIRES_AGE) || 1000 * 60 * 60,
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      maxAge: parseInt(process.env.COOKIE_REFRESH_EXPIRES_AGE) || 1000 * 60 * 60 * 24 * 7,
+    });
     return res.json({
       statusCode: HttpStatus.OK,
-      message: "Welcome back! You have logged in successfully.",
+      message: 'Welcome back! You have logged in successfully.',
       data: {
         user: {
           id: userId,
@@ -59,12 +82,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res() res: Response) {
     const { id } = req.user as Partial<User>;
-    await this.authService.logout(id)
+    await this.authService.logout(id);
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return res.json({
       statusCode: HttpStatus.OK,
-      message: "Logout successful.",
+      message: 'Logout successful.',
     });
   }
 
@@ -73,24 +96,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: Request, @Res() res: Response) {
     const refreshToken = req.cookies?.refreshToken;
-    console.log("refreshToken", refreshToken);
     if (!refreshToken) throw new ForbiddenException();
     const user = req.user as Partial<User>;
     if (!user || !user.refreshToken) throw new UnauthorizedException();
     const token = await this.authService.refreshTokens(user.id, refreshToken);
     res.cookie('accessToken', token.accessToken, { httpOnly: true, maxAge: 1000 * 60 * 5 });
     res.cookie('refreshToken', token.refreshToken, { httpOnly: true, maxAge: 1000 * 60 * 60 });
-    const { password, refreshToken: rt, createdAt, ...otherFields } = user;
     return res.json({
       statusCode: HttpStatus.OK,
-      message: "Token refreshed successfully.",
-      data: {
-        user: otherFields,
-        token: {
-          accessToken: token.accessToken,
-        }
-      }
+      message: 'Token refreshed successfully.',
+      data: token,
     });
   }
-
 }

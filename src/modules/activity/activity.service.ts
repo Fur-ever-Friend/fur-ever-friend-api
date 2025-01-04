@@ -10,7 +10,7 @@ import {
 } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnimalTypeService } from '../animal-type/animal-type.service';
-import { GLOBAL_CONSTS, validateAndConvertDateTimes, } from '@/common/utils';
+import { GLOBAL_CONSTS, validateAndConvertDateTimes } from '@/common/utils';
 import { NotificationService } from '../notification/notification.service';
 import { UserService } from '../user/user.service';
 
@@ -21,7 +21,7 @@ export class ActivityService {
     private readonly animalTypeService: AnimalTypeService,
     private readonly notificationService: NotificationService,
     private readonly userService: UserService,
-  ) { }
+  ) {}
 
   @Cron('*/16 * * * * *', {
     name: 'updateActivityStateFromAssignedToInProgress',
@@ -119,7 +119,7 @@ export class ActivityService {
                 createdAt: true,
               },
             },
-          }
+          },
         });
 
         for (const activity of updatedActivities) {
@@ -135,209 +135,11 @@ export class ActivityService {
             userId: activity.petsitter.user.id,
           });
         }
-
       }
-
     } catch (err: unknown) {
       // console.error('Error in cron job:', err);
     }
   }
-
-  // @Cron('*/16 * * * * *', { // Runs every 16 seconds; adjust frequency as needed
-  //   name: 'updateActivityStateFromReturningToCompleted',
-  //   timeZone: 'Asia/Bangkok',
-  // })
-  // async handleCronUpdateActivityStateFromReturningToCompleted() {
-  //   try {
-  //     // const oneDayAgo = new Date();
-  //     // oneDayAgo.setDate(oneDayAgo.getDate() - 1); // 24 hours ago
-
-  //     const twoMinsAgo = new Date();
-  //     twoMinsAgo.setMinutes(twoMinsAgo.getMinutes() - 2); // 2 minutes ago
-
-  //     // Step 1: Find activities in the RETURNING state for more than 24 hours
-  //     const overdueReturningActivities = await this.prismaService.activity.findMany({
-  //       where: {
-  //         state: ActivityState.RETURNING,
-  //         updatedAt: { lte: twoMinsAgo },
-  //       },
-  //       select: {
-  //         id: true,
-  //         title: true,
-  //         customer: {
-  //           select: {
-  //             id: true,
-  //             user: {
-  //               select: {
-  //                 id: true,
-  //               }
-  //             }
-  //           },
-  //         },
-  //         petsitter: {
-  //           select: {
-  //             id: true,
-  //             user: {
-  //               select: {
-  //                 id: true,
-  //               }
-  //             }
-  //           },
-  //         },
-  //       }
-  //     });
-
-  //     for (const activity of overdueReturningActivities) {
-  //       // Step 2: Update the state to COMPLETED automatically
-  //       await this.prismaService.activity.update({
-  //         where: { id: activity.id },
-  //         data: { state: ActivityState.COMPLETED },
-  //       });
-
-  //       // Step 3: Notify the customer and the pet sitter of the automatic completion
-  //       console.log(`Activity ${activity.id} has been automatically marked as COMPLETED.`);
-
-  //       await this.notificationService.create({
-  //         title: 'Activity Completed',
-  //         content: `Your activity ${activity.title} has been automatically marked as COMPLETED.`,
-  //         userId: activity.customer.user.id,
-  //       });
-
-  //       await this.notificationService.create({
-  //         title: 'Activity Completed',
-  //         content: `The activity ${activity.title} has been automatically marked as COMPLETED.`,
-  //         userId: activity.petsitter.user.id,
-  //       });
-  //     }
-  //   } catch (err) {
-  //     console.error('Error in auto-completing returning activities:', err);
-  //   }
-  // }
-
-  // @Cron('*/16 * * * * *', {
-  //   name: 'updateActivityStateFromInProgressToReturning',
-  //   timeZone: 'Asia/Bangkok',
-  // })
-  // async handleCronUpdateActivityStateFromInProgressToReturning() {
-  //   try {
-  //     const now = new Date();
-  //     const updatedRecords = await this.prismaService.activity.updateMany({
-  //       where: {
-  //         AND: [
-  //           { endDateTime: { lte: now } },
-  //           { state: ActivityState.IN_PROGRESS },
-  //         ],
-  //       },
-  //       data: {
-  //         state: ActivityState.RETURNING,
-  //       },
-  //     });
-
-  //     if (updatedRecords.count > 0) {
-  //       const updatedActivities = await this.prismaService.activity.findMany({
-  //         where: {
-  //           endDateTime: { lte: now },
-  //           state: ActivityState.RETURNING,
-  //         },
-  //         orderBy: { updatedAt: 'desc' },
-  //         take: updatedRecords.count,
-  //         select: {
-  //           id: true,
-  //           title: true,
-  //           detail: true,
-  //           createdAt: true,
-  //           updatedAt: true,
-  //           startDateTime: true,
-  //           endDateTime: true,
-  //           price: true,
-  //           pickupPoint: true,
-  //           state: true,
-  //           services: {
-  //             select: {
-  //               id: true,
-  //               pet: {
-  //                 select: {
-  //                   id: true,
-  //                   name: true,
-  //                   breed: true,
-  //                   age: true,
-  //                 },
-  //               },
-  //               tasks: {
-  //                 select: {
-  //                   id: true,
-  //                   type: true,
-  //                   detail: true,
-  //                   status: true,
-  //                   createdAt: true,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //           customer: {
-  //             select: {
-  //               id: true,
-  //               user: {
-  //                 select: {
-  //                   id: true,
-  //                   email: true,
-  //                   firstname: true,
-  //                   lastname: true,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //           petsitter: {
-  //             select: {
-  //               id: true,
-  //               user: {
-  //                 select: {
-  //                   id: true,
-  //                   email: true,
-  //                   firstname: true,
-  //                   lastname: true,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //           progresses: {
-  //             select: {
-  //               id: true,
-  //               content: true,
-  //               images: true,
-  //               createdAt: true,
-  //             },
-  //           },
-  //         }
-  //       });
-
-  //       for (const activity of updatedActivities) {
-  //         // send notification to customer
-  //         const customer = activity.customer.user;
-  //         const petsitter = activity.petsitter.user;
-  //         console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from IN_PROGRESS to RETURNING`);
-
-  //         // send notification to petsitter
-  //         await this.notificationService.create({
-  //           title: 'Activity Returning',
-  //           content: `The activity ${activity.title} is returning.`,
-  //           userId: petsitter.id,
-  //         });
-
-  //         // send notification to customer
-  //         await this.notificationService.create({
-  //           title: 'Activity Returning',
-  //           content: `The activity ${activity.title} is returning.`,
-  //           userId: customer.id,
-  //         });
-  //       }
-
-  //     }
-
-  //   } catch (err: unknown) {
-  //     console.error('Error in cron job:', err);
-  //   }
-  // }
 
   @Cron('*/16 * * * * *', {
     name: 'updateActivityStateFromPendingToCancelled',
@@ -350,10 +152,7 @@ export class ActivityService {
       afterTwoMins.setMinutes(afterTwoMins.getMinutes() - 10); // 10 minutes later
       const updatedRecords = await this.prismaService.activity.updateMany({
         where: {
-          AND: [
-            { startDateTime: { lte: afterTwoMins } },
-            { state: ActivityState.PENDING },
-          ],
+          AND: [{ startDateTime: { lte: afterTwoMins } }, { state: ActivityState.PENDING }],
         },
         data: {
           state: ActivityState.CANCELLED,
@@ -437,13 +236,12 @@ export class ActivityService {
                 createdAt: true,
               },
             },
-          }
+          },
         });
 
         for (const activity of updatedActivities) {
           // send notification to customer
           const customer = activity.customer.user;
-          console.log(`Send notification to customer ${customer.email} for activity ${activity.id} from PENDING to CANCELLED`);
 
           // send notification to petsitter
           await this.notificationService.create({
@@ -452,9 +250,7 @@ export class ActivityService {
             userId: activity.customer.user.id,
           });
         }
-
       }
-
     } catch (err: unknown) {
       // console.error('Error in cron job:', err);
     }
@@ -476,9 +272,9 @@ export class ActivityService {
       where.services = {
         some: {
           tasks: {
-            some: { type: serviceType }
-          }
-        }
+            some: { type: serviceType },
+          },
+        },
       };
     }
 
@@ -583,7 +379,7 @@ export class ActivityService {
                       },
                     },
                   },
-                }
+                },
               },
             },
             tasks: {
@@ -645,7 +441,7 @@ export class ActivityService {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-    }
+    };
   }
 
   async getYourActivities(id: string): Promise<Partial<Activity>[]> {
@@ -689,8 +485,8 @@ export class ActivityService {
                         id: true,
                         name: true,
                       },
-                    }
-                  }
+                    },
+                  },
                 },
                 age: true,
                 allergy: true,
@@ -791,9 +587,9 @@ export class ActivityService {
                 },
               },
             },
-          }
+          },
         },
-      }
+      },
     });
 
     return activities;
@@ -921,7 +717,7 @@ export class ActivityService {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-    }
+    };
   }
 
   async getActivityById(id: string): Promise<Partial<Activity>> {
@@ -1048,7 +844,7 @@ export class ActivityService {
                 },
               },
             },
-          }
+          },
         },
         review: {
           select: {
@@ -1058,9 +854,9 @@ export class ActivityService {
             createdAt: true,
             customerId: true,
             petsitterId: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!activity) {
@@ -1109,7 +905,7 @@ export class ActivityService {
         },
         state: {
           not: ActivityState.CANCELLED,
-        }
+        },
       },
     });
 
@@ -1136,7 +932,7 @@ export class ActivityService {
             },
             tasks: {
               create: service.tasks,
-            }
+            },
           })),
         },
       },
@@ -1182,7 +978,7 @@ export class ActivityService {
                       },
                     },
                   },
-                }
+                },
               },
             },
             tasks: {
@@ -1242,14 +1038,16 @@ export class ActivityService {
     return activity;
   }
 
-  private checkDuplicateTaskTypes = (services) => {
+  private checkDuplicateTaskTypes = services => {
     for (const service of services) {
       const petId = service.petId;
       const taskTypes = new Set();
 
       for (const task of service.tasks) {
         if (taskTypes.has(task.type)) {
-          throw new BadRequestException(`Duplicate task type found for Pet ID ${petId}: ${task.type}`);
+          throw new BadRequestException(
+            `Duplicate task type found for Pet ID ${petId}: ${task.type}`,
+          );
         } else {
           taskTypes.add(task.type);
         }
@@ -1261,16 +1059,17 @@ export class ActivityService {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
       select: {
-        state: true, customer: {
+        state: true,
+        customer: {
           select: {
             id: true,
             user: {
               select: {
                 id: true,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       },
     });
 
@@ -1279,7 +1078,9 @@ export class ActivityService {
     }
 
     if (activity.state !== ActivityState.IN_PROGRESS) {
-      throw new BadRequestException(`You can only update activity state to RETURNING for an activity in the IN_PROGRESS state.`);
+      throw new BadRequestException(
+        `You can only update activity state to RETURNING for an activity in the IN_PROGRESS state.`,
+      );
     }
 
     await this.prismaService.activity.update({
@@ -1305,7 +1106,7 @@ export class ActivityService {
             user: {
               select: {
                 id: true,
-              }
+              },
             },
           },
         },
@@ -1315,10 +1116,10 @@ export class ActivityService {
             user: {
               select: {
                 id: true,
-              }
+              },
             },
           },
-        }
+        },
       },
     });
 
@@ -1392,17 +1193,22 @@ export class ActivityService {
         break;
 
       default:
-        throw new BadRequestException(`Invalid state transition from ${activity.state} to ${state}`);
+        throw new BadRequestException(
+          `Invalid state transition from ${activity.state} to ${state}`,
+        );
     }
 
     await this.prismaService.activity.update({
       where: { id },
       data,
     });
-
   }
 
-  async updateActivityStateByPetsitter(id: string, state: ActivityState, petsitterId: string): Promise<void> {
+  async updateActivityStateByPetsitter(
+    id: string,
+    state: ActivityState,
+    petsitterId: string,
+  ): Promise<void> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
       select: { state: true },
@@ -1413,10 +1219,16 @@ export class ActivityService {
     }
 
     if (activity.state !== ActivityState.IN_PROGRESS) {
-      throw new BadRequestException(`You can only update activity state for an activity in the IN_PROGRESS state.`);
+      throw new BadRequestException(
+        `You can only update activity state for an activity in the IN_PROGRESS state.`,
+      );
     }
 
-    if (state !== ActivityState.ASSIGNED && state !== ActivityState.REJECTED && state !== ActivityState.COMPLETED) {
+    if (
+      state !== ActivityState.ASSIGNED &&
+      state !== ActivityState.REJECTED &&
+      state !== ActivityState.COMPLETED
+    ) {
       throw new BadRequestException(`Invalid state transition from PENDING to ${state}`);
     }
 
@@ -1429,11 +1241,14 @@ export class ActivityService {
         },
       },
     });
-
-    console.log(`Activity ${id} has been ${state === ActivityState.ASSIGNED ? 'assigned' : 'rejected'} to petsitter ${petsitterId}`);
   }
 
-  async updateActivityPetsitterState(id: string, state: ActivityState, petsitterId: string, price: number): Promise<void> {
+  async updateActivityPetsitterState(
+    id: string,
+    state: ActivityState,
+    petsitterId: string,
+    price: number,
+  ): Promise<void> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
       select: { state: true },
@@ -1444,7 +1259,9 @@ export class ActivityService {
     }
 
     if (activity.state !== ActivityState.PENDING) {
-      throw new BadRequestException(`You can only accept or reject an activity in the PENDING state.`);
+      throw new BadRequestException(
+        `You can only accept or reject an activity in the PENDING state.`,
+      );
     }
 
     await this.prismaService.activity.update({
@@ -1457,8 +1274,6 @@ export class ActivityService {
         price,
       },
     });
-
-    console.log(`Activity ${id} has been ${state === ActivityState.ASSIGNED ? 'assigned' : 'rejected'} to petsitter ${petsitterId}`);
   }
 
   async deleteAllActivities(): Promise<void> {
@@ -1494,7 +1309,12 @@ export class ActivityService {
   }
 
   // new
-  async createProgress(id: string, petsitterId: string, data: CreateProgressDto, images: string[]): Promise<Partial<ActivityProgress>> {
+  async createProgress(
+    id: string,
+    petsitterId: string,
+    data: CreateProgressDto,
+    images: string[],
+  ): Promise<Partial<ActivityProgress>> {
     const activity = await this.prismaService.activity.findUnique({
       where: { id },
       select: { state: true, petsitterId: true },
@@ -1505,7 +1325,9 @@ export class ActivityService {
     }
 
     if (activity.state !== ActivityState.IN_PROGRESS) {
-      throw new BadRequestException(`You can only create progress for an activity in the IN_PROGRESS state.`);
+      throw new BadRequestException(
+        `You can only create progress for an activity in the IN_PROGRESS state.`,
+      );
     }
 
     const progress = await this.prismaService.activityProgress.create({
@@ -1528,7 +1350,10 @@ export class ActivityService {
   }
 
   // new
-  async getProgressesByActivityId(activityId: string, user: User): Promise<Partial<ActivityProgress>[]> {
+  async getProgressesByActivityId(
+    activityId: string,
+    user: User,
+  ): Promise<Partial<ActivityProgress>[]> {
     const activityExists = await this.prismaService.activity.findUnique({
       where: { id: activityId },
     });
@@ -1565,7 +1390,12 @@ export class ActivityService {
   }
 
   // new
-  async updateTaskStatus(id: string, petsitterId: string, taskId: string, status: boolean): Promise<void> {
+  async updateTaskStatus(
+    id: string,
+    petsitterId: string,
+    taskId: string,
+    status: boolean,
+  ): Promise<void> {
     const task = await this.prismaService.task.findUnique({
       where: { id: taskId },
       select: { status: true, id: true },
@@ -1581,15 +1411,21 @@ export class ActivityService {
     });
 
     if (!activity || activity.petsitterId !== petsitterId) {
-      throw new BadRequestException(`You are not authorized to update task status for this activity.`);
+      throw new BadRequestException(
+        `You are not authorized to update task status for this activity.`,
+      );
     }
 
     if (activity.state !== ActivityState.IN_PROGRESS) {
-      throw new BadRequestException(`You can only update task status for an activity in the IN_PROGRESS state.`);
+      throw new BadRequestException(
+        `You can only update task status for an activity in the IN_PROGRESS state.`,
+      );
     }
 
     if (task.status === status) {
-      throw new BadRequestException(`Task status is already ${status ? 'completed' : 'incomplete'}`);
+      throw new BadRequestException(
+        `Task status is already ${status ? 'completed' : 'incomplete'}`,
+      );
     }
 
     await this.prismaService.task.update({
@@ -1605,11 +1441,15 @@ export class ActivityService {
     });
 
     if (!activity || activity.customerId !== customerId) {
-      throw new BadRequestException(`You are not authorized to invite a petsitter for this activity.`);
+      throw new BadRequestException(
+        `You are not authorized to invite a petsitter for this activity.`,
+      );
     }
 
     if (activity.state !== ActivityState.PENDING) {
-      throw new BadRequestException(`You can only invite a petsitter for an activity in the PENDING state.`);
+      throw new BadRequestException(
+        `You can only invite a petsitter for an activity in the PENDING state.`,
+      );
     }
 
     const petsitter = await this.userService.getUserByIdWithoutCredential(petsitterId);
@@ -1620,7 +1460,7 @@ export class ActivityService {
 
     await this.notificationService.create({
       title: 'Activity Invitation',
-      content: `You have been invited to a new activity.`,
+      content: `You have been invited to a new activity.\n${id}`,
       userId: petsitterId,
     });
   }

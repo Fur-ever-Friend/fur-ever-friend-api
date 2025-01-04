@@ -5,17 +5,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/all-filter-exceptions.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { getCorsOptions } from './common/utils/cors.utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const isDevelopment = configService.get<string>('NODE_ENV') === 'development';
-  const corsAllowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS').split(',');
 
   app.use(cookieParser());
+  const corsOrigin = configService.get<string>('CORS_ALLOWED_ORIGINS').split(',');
+  console.log(corsOrigin);
 
-  app.enableCors(getCorsOptions(corsAllowedOrigins));
+  app.enableCors({
+    origin: corsOrigin,
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -33,6 +36,6 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
   }
 
-  await app.listen(process.env.SERVER_PORT ?? 3000);
+  await app.listen(process.env.SERVER_PORT);
 }
 bootstrap();
